@@ -5,9 +5,12 @@ import type React from "react"
 import { useState, useEffect } from "react"
 import Link from "next/link"
 import Navigation from "@/components/navigation"
+import AuthGuard from "@/components/auth-guard"
 import { supabase } from "@/lib/supabase"
 import { useAuth } from "@/contexts/auth-context"
-import { ShoppingCart, X, Phone, MapPin, User, Plus, Minus, Eye } from "lucide-react"
+import { ShoppingCart, X, Phone, MapPin, User, Plus, Minus, Eye, AlertCircle, LogIn } from "lucide-react"
+import { motion } from "framer-motion"
+import { sanitizeInput, validateEmail, validatePhone, validateName, validateAddress, validateQuantity, checkRateLimit } from "@/lib/security"
 
 interface Product {
   id: string
@@ -52,17 +55,25 @@ export default function ProductsPage() {
       const { data, error } = await supabase.from("products").select("*").order("created_at", { ascending: false })
 
       if (error) throw error
+      
+      console.log('Fetched products:', data)
+      data?.forEach(product => {
+        console.log(`Product: ${product.name}, Image URL: ${product.image_url}`)
+      })
+      
       setProducts(data || [])
     } catch (error) {
-      // Error fetching products
+      console.error("Error fetching products:", error)
     } finally {
       setLoading(false)
     }
   }
 
+  const [showAuthModal, setShowAuthModal] = useState(false)
+
   const handleOrderNow = (product: Product) => {
     if (!user) {
-      alert("Please login to place an order")
+      setShowAuthModal(true)
       return
     }
     setSelectedProduct(product)
@@ -73,19 +84,86 @@ export default function ProductsPage() {
     e.preventDefault()
     if (!selectedProduct || !user) return
 
+    // Rate limiting check
+    if (!checkRateLimit(user.id, 5, 60000)) {
+      alert("Too many requests. Please wait a minute before trying again.")
+      return
+    }
+
+    // Validate inputs
+    const sanitizedName = sanitizeInput(orderForm.customer_name)
+    const sanitizedAddress = sanitizeInput(orderForm.address)
+    const sanitizedPhone = sanitizeInput(orderForm.phone)
+
+    if (!validateName(sanitizedName)) {
+      alert("Please enter a valid name (2-50 characters, letters only)")
+      return
+    }
+
+    if (!validateAddress(sanitizedAddress)) {
+      alert("Please enter a valid address (10-200 characters)")
+      return
+    }
+
+    if (!validatePhone(sanitizedPhone)) {
+      alert("Please enter a valid phone number")
+      return
+    }
+
+    if (!validateQuantity(orderForm.quantity)) {
+      alert("Please enter a valid quantity (1-100)")
+      return
+    }
+
+    if (!validateEmail(user.email || '')) {
+      alert("Invalid user email. Please contact support.")
+      return
+    }
+
     setOrderLoading(true)
     try {
-      const { error } = await supabase.from("orders").insert({
+      const { data: orderData, error } = await supabase.from("orders").insert({
         user_id: user.id,
         product_id: selectedProduct.id,
-        customer_name: orderForm.customer_name,
-        address: orderForm.address,
-        phone: orderForm.phone,
+        customer_name: sanitizedName,
+        address: sanitizedAddress,
+        phone: sanitizedPhone,
         quantity: orderForm.quantity,
         status: "pending",
-      })
+      }).select().single()
 
       if (error) throw error
+
+      // Send email notification to admin
+      try {
+        const totalAmount = (selectedProduct.is_on_sale && selectedProduct.sale_price 
+          ? selectedProduct.sale_price 
+          : selectedProduct.price) * orderForm.quantity
+
+        await fetch('/api/send-order-email', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            type: 'new_order',
+            orderId: orderData.id,
+            customerName: sanitizedName,
+            customerEmail: user.email,
+            customerPhone: sanitizedPhone,
+            customerAddress: sanitizedAddress,
+            productName: selectedProduct.name,
+            productPrice: selectedProduct.is_on_sale && selectedProduct.sale_price 
+              ? selectedProduct.sale_price 
+              : selectedProduct.price,
+            quantity: orderForm.quantity,
+            totalAmount: totalAmount
+          })
+        })
+      } catch (emailError) {
+        console.error("Failed to send email notification:", emailError)
+        // Don't fail the order if email fails
+      }
 
       setOrderSuccess(true)
       setTimeout(() => {
@@ -139,9 +217,13 @@ export default function ProductsPage() {
               )}
               <div className="aspect-square overflow-hidden">
                 <img
-                  src={product.image_url || "/placeholder.svg?height=300&width=300&query=hair oil bottle"}
+                  src={product.image_url || "/oil.png"}
                   alt={product.name}
                   className="w-full h-full object-cover hover:scale-105 transition-transform duration-300"
+                  onError={(e) => {
+                    const target = e.target as HTMLImageElement;
+                    target.src = "/oil.png";
+                  }}
                 />
               </div>
 
@@ -315,6 +397,57 @@ export default function ProductsPage() {
             )}
           </div>
         </div>
+      )}
+
+      {/* Authentication Modal */}
+      {showAuthModal && (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50"
+        >
+          <motion.div
+            initial={{ scale: 0.9, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            className="bg-white rounded-2xl max-w-md w-full p-8 text-center"
+          >
+            <div className="w-16 h-16 bg-[#1F8D9D]/10 rounded-full flex items-center justify-center mx-auto mb-4">
+              <AlertCircle className="w-8 h-8 text-[#1F8D9D]" />
+            </div>
+            
+            <h3 className="text-2xl font-semibold text-[#1B1B1B] mb-4">
+              Authentication Required
+            </h3>
+            
+            <p className="text-gray-600 mb-6">
+              Please log in to your account to place an order and enjoy our premium hair oil products.
+            </p>
+
+            <div className="flex flex-col sm:flex-row gap-3">
+              <Link
+                href="/login"
+                className="flex items-center justify-center space-x-2 px-6 py-3 bg-[#1F8D9D] text-white rounded-lg hover:bg-[#186F7B] transition-colors duration-300"
+              >
+                <LogIn className="w-4 h-4" />
+                <span>Log In</span>
+              </Link>
+              
+              <Link
+                href="/signup"
+                className="px-6 py-3 bg-[#FDBA2D] text-[#1B1B1B] rounded-lg hover:bg-[#FDBA2D]/90 transition-colors duration-300"
+              >
+                Sign Up
+              </Link>
+              
+              <button
+                onClick={() => setShowAuthModal(false)}
+                className="px-6 py-3 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors duration-300"
+              >
+                Cancel
+              </button>
+            </div>
+          </motion.div>
+        </motion.div>
       )}
     </div>
   )

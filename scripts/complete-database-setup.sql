@@ -20,6 +20,9 @@ CREATE TABLE IF NOT EXISTS public.products (
   description TEXT,
   image_url TEXT,
   image_urls TEXT[],
+  is_on_sale BOOLEAN DEFAULT FALSE,
+  sale_price DECIMAL(10,2) CHECK (sale_price > 0),
+  sale_percentage INTEGER CHECK (sale_percentage > 0 AND sale_percentage <= 100),
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
@@ -32,15 +35,20 @@ CREATE TABLE IF NOT EXISTS public.orders (
   customer_name TEXT NOT NULL,
   address TEXT NOT NULL,
   phone TEXT NOT NULL CHECK (phone ~ '^[0-9+\-\s()]+$'),
+  quantity INTEGER DEFAULT 1 CHECK (quantity > 0),
   status TEXT DEFAULT 'pending' CHECK (status IN ('pending', 'approved', 'rejected')),
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
--- Add image_urls column to existing products table if it doesn't exist
+-- Add missing columns to existing tables if they don't exist
 ALTER TABLE public.products ADD COLUMN IF NOT EXISTS image_urls TEXT[];
 ALTER TABLE public.products ADD COLUMN IF NOT EXISTS updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW();
+ALTER TABLE public.products ADD COLUMN IF NOT EXISTS is_on_sale BOOLEAN DEFAULT FALSE;
+ALTER TABLE public.products ADD COLUMN IF NOT EXISTS sale_price DECIMAL(10,2) CHECK (sale_price > 0);
+ALTER TABLE public.products ADD COLUMN IF NOT EXISTS sale_percentage INTEGER CHECK (sale_percentage > 0 AND sale_percentage <= 100);
 ALTER TABLE public.orders ADD COLUMN IF NOT EXISTS updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW();
+ALTER TABLE public.orders ADD COLUMN IF NOT EXISTS quantity INTEGER DEFAULT 1 CHECK (quantity > 0);
 
 -- Update existing products to have image_urls array
 UPDATE public.products
@@ -70,10 +78,10 @@ CREATE TRIGGER update_orders_updated_at
     EXECUTE FUNCTION update_updated_at_column();
 
 -- Insert sample products if they don't exist
-INSERT INTO public.products (name, price, description, image_url, image_urls) VALUES
-('ZEENE Premium Hair Oil', 29.99, 'Premium natural hair oil for healthy, shiny hair', '/placeholder.svg?height=300&width=300', ARRAY['/placeholder.svg?height=300&width=300']),
-('ZEENE Herbal Hair Oil', 24.99, 'Herbal blend for hair growth and nourishment', '/placeholder.svg?height=300&width=300', ARRAY['/placeholder.svg?height=300&width=300']),
-('ZEENE Coconut Hair Oil', 19.99, 'Pure coconut oil for deep conditioning', '/placeholder.svg?height=300&width=300', ARRAY['/placeholder.svg?height=300&width=300'])
+INSERT INTO public.products (name, price, description, image_url, image_urls, is_on_sale, sale_price, sale_percentage) VALUES
+('ZEENE Premium Hair Oil', 2000, 'Premium natural hair oil for healthy, shiny hair made with the finest ingredients', '/oil.png', ARRAY['/oil.png'], true, 1500, 25),
+('ZEENE Herbal Hair Oil', 1800, 'Herbal blend for hair growth and nourishment with traditional herbs', '/oil.png', ARRAY['/oil.png'], false, null, null),
+('ZEENE Coconut Hair Oil', 1500, 'Pure coconut oil for deep conditioning and natural shine', '/oil.png', ARRAY['/oil.png'], true, 1200, 20)
 ON CONFLICT DO NOTHING;
 
 -- Enable Row Level Security

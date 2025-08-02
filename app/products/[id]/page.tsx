@@ -6,9 +6,11 @@ import { useParams, useRouter } from "next/navigation"
 import Navigation from "@/components/navigation"
 import { supabase } from "@/lib/supabase"
 import { useAuth } from "@/contexts/auth-context"
-import { ShoppingCart, X, Phone, MapPin, User, Plus, Minus, ArrowLeft, Star, Shield, Leaf, Heart } from "lucide-react"
+import { ShoppingCart, X, Phone, MapPin, User, Plus, Minus, ArrowLeft, Star, Shield, Leaf, Heart, AlertCircle, LogIn } from "lucide-react"
 import Image from "next/image"
+import Link from "next/link"
 import { motion } from "framer-motion"
+import { sanitizeInput, validateEmail, validatePhone, validateName, validateAddress, validateQuantity, checkRateLimit } from "@/lib/security"
 
 interface Product {
   id: string
@@ -69,9 +71,11 @@ export default function ProductDetailPage() {
     }
   }
 
+  const [showAuthModal, setShowAuthModal] = useState(false)
+
   const handleOrderNow = () => {
     if (!user) {
-      alert("Please login to place an order")
+      setShowAuthModal(true)
       return
     }
     setShowOrderModal(true)
@@ -81,19 +85,86 @@ export default function ProductDetailPage() {
     e.preventDefault()
     if (!product || !user) return
 
+    // Rate limiting check
+    if (!checkRateLimit(user.id, 5, 60000)) {
+      alert("Too many requests. Please wait a minute before trying again.")
+      return
+    }
+
+    // Validate inputs
+    const sanitizedName = sanitizeInput(orderForm.customer_name)
+    const sanitizedAddress = sanitizeInput(orderForm.address)
+    const sanitizedPhone = sanitizeInput(orderForm.phone)
+
+    if (!validateName(sanitizedName)) {
+      alert("Please enter a valid name (2-50 characters, letters only)")
+      return
+    }
+
+    if (!validateAddress(sanitizedAddress)) {
+      alert("Please enter a valid address (10-200 characters)")
+      return
+    }
+
+    if (!validatePhone(sanitizedPhone)) {
+      alert("Please enter a valid phone number")
+      return
+    }
+
+    if (!validateQuantity(orderForm.quantity)) {
+      alert("Please enter a valid quantity (1-100)")
+      return
+    }
+
+    if (!validateEmail(user.email || '')) {
+      alert("Invalid user email. Please contact support.")
+      return
+    }
+
     setOrderLoading(true)
     try {
-      const { error } = await supabase.from("orders").insert({
+      const { data: orderData, error } = await supabase.from("orders").insert({
         user_id: user.id,
         product_id: product.id,
-        customer_name: orderForm.customer_name,
-        address: orderForm.address,
-        phone: orderForm.phone,
+        customer_name: sanitizedName,
+        address: sanitizedAddress,
+        phone: sanitizedPhone,
         quantity: orderForm.quantity,
         status: "pending",
-      })
+      }).select().single()
 
       if (error) throw error
+
+      // Send email notification to admin
+      try {
+        const totalAmount = (product.is_on_sale && product.sale_price 
+          ? product.sale_price 
+          : product.price) * orderForm.quantity
+
+        await fetch('/api/send-order-email', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            type: 'new_order',
+            orderId: orderData.id,
+            customerName: sanitizedName,
+            customerEmail: user.email,
+            customerPhone: sanitizedPhone,
+            customerAddress: sanitizedAddress,
+            productName: product.name,
+            productPrice: product.is_on_sale && product.sale_price 
+              ? product.sale_price 
+              : product.price,
+            quantity: orderForm.quantity,
+            totalAmount: totalAmount
+          })
+        })
+      } catch (emailError) {
+        console.error("Failed to send email notification:", emailError)
+        // Don't fail the order if email fails
+      }
 
       setOrderSuccess(true)
       setTimeout(() => {
@@ -234,12 +305,7 @@ export default function ProductDetailPage() {
                   <span className="text-3xl font-bold text-[#1F8D9D]">PKR {product.price.toFixed(0)}</span>
                 )}
               </div>
-              <div className="flex items-center space-x-1">
-                {[...Array(5)].map((_, i) => (
-                  <Star key={i} className="w-5 h-5 fill-[#FDBA2D] text-[#FDBA2D]" />
-                ))}
-                <span className="text-gray-600 ml-2">(4.9/5)</span>
-              </div>
+
             </div>
             </div>
 
@@ -500,6 +566,57 @@ export default function ProductDetailPage() {
             )}
           </motion.div>
         </div>
+      )}
+
+      {/* Authentication Modal */}
+      {showAuthModal && (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50"
+        >
+          <motion.div
+            initial={{ scale: 0.9, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            className="bg-white rounded-2xl max-w-md w-full p-8 text-center"
+          >
+            <div className="w-16 h-16 bg-[#1F8D9D]/10 rounded-full flex items-center justify-center mx-auto mb-4">
+              <AlertCircle className="w-8 h-8 text-[#1F8D9D]" />
+            </div>
+            
+            <h3 className="text-2xl font-semibold text-[#1B1B1B] mb-4">
+              Authentication Required
+            </h3>
+            
+            <p className="text-gray-600 mb-6">
+              Please log in to your account to place an order for this premium hair oil product.
+            </p>
+
+            <div className="flex flex-col sm:flex-row gap-3">
+              <Link
+                href="/login"
+                className="flex items-center justify-center space-x-2 px-6 py-3 bg-[#1F8D9D] text-white rounded-lg hover:bg-[#186F7B] transition-colors duration-300"
+              >
+                <LogIn className="w-4 h-4" />
+                <span>Log In</span>
+              </Link>
+              
+              <Link
+                href="/signup"
+                className="px-6 py-3 bg-[#FDBA2D] text-[#1B1B1B] rounded-lg hover:bg-[#FDBA2D]/90 transition-colors duration-300"
+              >
+                Sign Up
+              </Link>
+              
+              <button
+                onClick={() => setShowAuthModal(false)}
+                className="px-6 py-3 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors duration-300"
+              >
+                Cancel
+              </button>
+            </div>
+          </motion.div>
+        </motion.div>
       )}
     </div>
   )

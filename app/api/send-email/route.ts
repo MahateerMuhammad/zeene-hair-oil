@@ -58,7 +58,7 @@ export async function POST(request: NextRequest) {
 
     // Send email to business
     const businessEmail = await resend.emails.send({
-      from: "ZEENE Contact Form <noreply@zeene.store>",
+      from: "no-reply@zeene.store",
       to: [serverEnv.CONTACT_EMAIL || "zeene.contact@gmail.com"],
       subject: `New Contact Form Submission: ${subject}`,
       html: `
@@ -100,7 +100,7 @@ export async function POST(request: NextRequest) {
 
     // Send confirmation email to customer
     const confirmationEmail = await resend.emails.send({
-      from: "ZEENE Hair Oil <noreply@zeene.store>",
+      from: "no-reply@zeene.store",
       to: [email],
       subject: "Thank you for contacting ZEENE Hair Oil",
       html: `

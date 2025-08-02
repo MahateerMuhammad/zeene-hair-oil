@@ -113,11 +113,15 @@ export default function FeaturedProducts() {
               )}
               <div className="aspect-square overflow-hidden">
                 <motion.img
-                  src={product.image_url || "/placeholder.svg?height=300&width=300&query=hair oil bottle"}
+                  src={product.image_url || "/oil.png"}
                   alt={product.name}
                   className="w-full h-full object-cover"
                   whileHover={{ scale: 1.1 }}
                   transition={{ duration: 0.3 }}
+                  onError={(e) => {
+                    const target = e.target as HTMLImageElement;
+                    target.src = "/oil.png";
+                  }}
                 />
               </div>
 

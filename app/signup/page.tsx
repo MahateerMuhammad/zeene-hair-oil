@@ -7,6 +7,7 @@ import { useRouter } from "next/navigation"
 import Link from "next/link"
 import { useAuth } from "@/contexts/auth-context"
 import Navigation from "@/components/navigation"
+import { validateEmail, validatePassword, sanitizeInput } from "@/lib/security"
 import { Eye, EyeOff, Mail, Lock } from "lucide-react"
 
 export default function SignupPage() {
@@ -27,20 +28,32 @@ export default function SignupPage() {
     setError("")
     setSuccess("")
 
+    // Sanitize email input
+    const sanitizedEmail = sanitizeInput(email.toLowerCase().trim())
+
+    // Validate email
+    if (!validateEmail(sanitizedEmail)) {
+      setError("Please enter a valid email address")
+      setLoading(false)
+      return
+    }
+
+    // Validate password
+    const passwordValidation = validatePassword(password)
+    if (!passwordValidation.valid) {
+      setError(passwordValidation.message || "Invalid password")
+      setLoading(false)
+      return
+    }
+
     if (password !== confirmPassword) {
       setError("Passwords do not match")
       setLoading(false)
       return
     }
 
-    if (password.length < 6) {
-      setError("Password must be at least 6 characters long")
-      setLoading(false)
-      return
-    }
-
     try {
-      const { error } = await signUp(email, password)
+      const { error } = await signUp(sanitizedEmail, password)
       if (error) {
         setError(error.message)
       } else {

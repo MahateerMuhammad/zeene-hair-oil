@@ -9,6 +9,7 @@ import { supabase } from "@/lib/supabase"
 import { useAuth } from "@/contexts/auth-context"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { validateProduct, validateImageFile, sanitizeInput } from "@/lib/validation"
+import { sanitizeInput as securitySanitize, validateName, validatePrice, checkRateLimit } from "@/lib/security"
 import { logger } from "@/lib/logger"
 import { Package, Users, ShoppingCart, Plus, Edit, Trash2, Check, X, AlertCircle } from "lucide-react"
 
@@ -123,14 +124,56 @@ export default function AdminDashboard() {
 
   const updateOrderStatus = async (orderId: string, status: "approved" | "rejected") => {
     try {
+      // Get order details first
+      const { data: orderDetails, error: fetchError } = await supabase
+        .from("orders")
+        .select(`
+          *,
+          products (name, price, sale_price, is_on_sale),
+          users (email)
+        `)
+        .eq("id", orderId)
+        .single()
+
+      if (fetchError) throw fetchError
+
       const { error } = await supabase.from("orders").update({ status }).eq("id", orderId)
 
       if (error) throw error
 
-      // If approved, you would send email here
-      if (status === "approved") {
-        // Email functionality would go here
-        // Order approved - email would be sent
+      // Send email notification to customer
+      try {
+        const product = orderDetails.products
+        const customerEmail = orderDetails.users?.email
+        const totalAmount = (product.is_on_sale && product.sale_price 
+          ? product.sale_price 
+          : product.price) * orderDetails.quantity
+
+        if (customerEmail) {
+          await fetch('/api/send-order-email', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              type: status === 'approved' ? 'order_approved' : 'order_rejected',
+              orderId: orderId,
+              customerName: orderDetails.customer_name,
+              customerEmail: customerEmail,
+              customerPhone: orderDetails.phone,
+              customerAddress: orderDetails.address,
+              productName: product.name,
+              productPrice: product.is_on_sale && product.sale_price 
+                ? product.sale_price 
+                : product.price,
+              quantity: orderDetails.quantity,
+              totalAmount: totalAmount
+            })
+          })
+        }
+      } catch (emailError) {
+        console.error("Failed to send email notification:", emailError)
+        // Don't fail the status update if email fails
       }
 
       fetchOrders()
@@ -144,24 +187,41 @@ export default function AdminDashboard() {
     const uploadedUrls: string[] = []
     
     for (const file of files) {
-      const fileExt = file.name.split('.').pop()
-      const fileName = `${Math.random().toString(36).substring(2)}.${fileExt}`
-      const filePath = `products/${fileName}`
+      try {
+        const fileExt = file.name.split('.').pop()
+        const fileName = `${Date.now()}-${Math.random().toString(36).substring(2)}.${fileExt}`
+        const filePath = `products/${fileName}`
 
-      const { error: uploadError } = await supabase.storage
-        .from('product-images')
-        .upload(filePath, file)
+        console.log('Uploading image to:', filePath)
 
-      if (uploadError) {
-        // Error uploading image, skipping
-        continue
+        const { data: uploadData, error: uploadError } = await supabase.storage
+          .from('product-images')
+          .upload(filePath, file, {
+            cacheControl: '3600',
+            upsert: false
+          })
+
+        if (uploadError) {
+          console.error('Upload error:', uploadError)
+          throw new Error(`Failed to upload image: ${uploadError.message}`)
+        }
+
+        console.log('Upload successful:', uploadData)
+
+        const { data } = supabase.storage
+          .from('product-images')
+          .getPublicUrl(filePath)
+
+        if (data.publicUrl) {
+          uploadedUrls.push(data.publicUrl)
+          console.log('Public URL generated:', data.publicUrl)
+        } else {
+          throw new Error('Failed to generate public URL for uploaded image')
+        }
+      } catch (error) {
+        console.error('Error uploading file:', file.name, error)
+        throw error // Re-throw to handle in the calling function
       }
-
-      const { data } = supabase.storage
-        .from('product-images')
-        .getPublicUrl(filePath)
-
-      uploadedUrls.push(data.publicUrl)
     }
 
     return uploadedUrls
@@ -200,9 +260,20 @@ export default function AdminDashboard() {
           return
         }
         
-        const uploadedUrls = await uploadImages([file])
-        if (uploadedUrls.length > 0) {
-          imageUrl = uploadedUrls[0]
+        try {
+          console.log('Starting image upload for:', file.name)
+          const uploadedUrls = await uploadImages([file])
+          if (uploadedUrls.length > 0) {
+            imageUrl = uploadedUrls[0]
+            console.log('Image uploaded successfully:', imageUrl)
+          } else {
+            throw new Error('No URL returned from image upload')
+          }
+        } catch (uploadError) {
+          console.error('Image upload failed:', uploadError)
+          setSubmitError(`Failed to upload image: ${uploadError instanceof Error ? uploadError.message : 'Unknown error'}. Please check if the storage bucket is set up correctly.`)
+          setUploadingImages(false)
+          return
         }
       }
 
@@ -215,6 +286,9 @@ export default function AdminDashboard() {
         sale_price: productForm.is_on_sale && productForm.sale_price ? parseFloat(productForm.sale_price) : null,
         sale_percentage: productForm.is_on_sale && productForm.sale_percentage ? parseInt(productForm.sale_percentage) : null,
       }
+
+      console.log('Product data to save:', productData)
+      console.log('Final image URL:', imageUrl)
 
       if (editingProduct) {
         const { error } = await supabase.from("products").update(productData).eq("id", editingProduct.id)
@@ -240,16 +314,53 @@ export default function AdminDashboard() {
   }
 
   const deleteProduct = async (productId: string) => {
-    if (!confirm("Are you sure you want to delete this product?")) return
+    // Find the product to get its details
+    const product = products.find(p => p.id === productId)
+    if (!product) {
+      setSubmitError('Product not found.')
+      return
+    }
+
+    // Show confirmation dialog with product name
+    const confirmed = window.confirm(
+      `Are you sure you want to delete "${product.name}"?\n\nThis action cannot be undone and will:\n• Remove the product from your store\n• Delete the product image\n• Cancel any pending orders for this product`
+    )
+    
+    if (!confirmed) return
 
     try {
+      setSubmitError("") // Clear any previous errors
+      
+      // First, delete the product image from storage if it exists
+      if (product.image_url && product.image_url.includes('product-images')) {
+        try {
+          // Extract the file path from the URL
+          const urlParts = product.image_url.split('/product-images/')
+          if (urlParts.length > 1) {
+            const filePath = `products/${urlParts[1]}`
+            await supabase.storage
+              .from('product-images')
+              .remove([filePath])
+          }
+        } catch (imageError) {
+          console.warn('Failed to delete product image:', imageError)
+          // Continue with product deletion even if image deletion fails
+        }
+      }
+
+      // Delete the product from database
       const { error } = await supabase.from("products").delete().eq("id", productId)
 
       if (error) throw error
+
+      // Show success message
+      setSubmitError(`Product "${product.name}" has been successfully deleted.`)
+      setTimeout(() => setSubmitError(""), 3000) // Clear success message after 3 seconds
+      
       fetchProducts()
     } catch (error) {
       logger.databaseError('Failed to delete product', 'DELETE', 'products', error as Error)
-      setSubmitError('Failed to delete product. Please try again.')
+      setSubmitError(`Failed to delete "${product.name}". Please try again.`)
     }
   }
 
@@ -399,7 +510,7 @@ export default function AdminDashboard() {
                     <p className="text-gray-600">No orders yet</p>
                   </div>
                 ) : (
-                  <div className="space-y-4">
+                  <div className="max-h-96 overflow-y-auto space-y-4 pr-2">
                     {orders.map((order) => (
                       <div key={order.id} className="border border-gray-200 rounded-lg p-4">
                         <div className="flex items-center justify-between">
@@ -472,9 +583,13 @@ export default function AdminDashboard() {
                     {products.map((product) => (
                       <div key={product.id} className="border border-gray-200 rounded-lg overflow-hidden">
                         <img
-                          src={product.image_url || "/placeholder.svg?height=200&width=300&query=hair oil bottle"}
+                          src={product.image_url || "/oil.png"}
                           alt={product.name}
                           className="w-full h-48 object-cover"
+                          onError={(e) => {
+                            const target = e.target as HTMLImageElement;
+                            target.src = "/oil.png";
+                          }}
                         />
                         <div className="p-4">
                           <div className="flex items-center justify-between mb-2">
@@ -551,9 +666,34 @@ export default function AdminDashboard() {
               <form onSubmit={handleProductSubmit} className="space-y-4">
                 {/* Error Messages */}
                 {submitError && (
-                  <div className="bg-red-50 border border-red-200 rounded-lg p-3 flex items-center space-x-2">
-                    <AlertCircle className="w-4 h-4 text-red-500" />
-                    <span className="text-red-700 text-sm">{submitError}</span>
+                  <div className={`border rounded-lg p-3 flex items-center space-x-2 ${
+                    submitError.includes('successfully') 
+                      ? 'bg-green-50 border-green-200' 
+                      : 'bg-red-50 border-red-200'
+                  }`}>
+                    <AlertCircle className={`w-4 h-4 ${
+                      submitError.includes('successfully') 
+                        ? 'text-green-500' 
+                        : 'text-red-500'
+                    }`} />
+                    <span className={`text-sm ${
+                      submitError.includes('successfully') 
+                        ? 'text-green-700' 
+                        : 'text-red-700'
+                    }`}>
+                      {submitError}
+                    </span>
+                    {submitError.includes('storage bucket') && (
+                      <div className="ml-2">
+                        <a 
+                          href="/IMAGE_UPLOAD_SETUP_GUIDE.md" 
+                          target="_blank"
+                          className="text-blue-600 hover:text-blue-800 text-xs underline"
+                        >
+                          Setup Guide
+                        </a>
+                      </div>
+                    )}
                   </div>
                 )}
                 

@@ -55,11 +55,11 @@ export async function middleware(req: NextRequest) {
   // Improved Content Security Policy
   const csp = [
     "default-src 'self'",
-    "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.jsdelivr.net",
+    "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.jsdelivr.net https://vercel.live",
     "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
     "img-src 'self' data: https: blob:",
     "font-src 'self' data: https://fonts.gstatic.com",
-    "connect-src 'self' https://*.supabase.co https://api.resend.com",
+    "connect-src 'self' https://*.supabase.co https://api.resend.com https://vercel.live wss://*.supabase.co",
     "media-src 'self'",
     "object-src 'none'",
     "base-uri 'self'",
