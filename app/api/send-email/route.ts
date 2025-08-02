@@ -150,8 +150,13 @@ export async function POST(request: NextRequest) {
     })
   } catch (error) {
     // Log error securely (consider using proper logging service in production)
+    console.error("Email sending error:", error)
     return NextResponse.json(
-      { success: false, message: "Failed to send email. Please try again." },
+      { 
+        success: false, 
+        message: "Failed to send email. Please try again or contact us directly via WhatsApp.",
+        error: process.env.NODE_ENV === 'development' ? String(error) : undefined
+      },
       { status: 500 }
     )
   }

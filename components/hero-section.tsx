@@ -132,7 +132,7 @@ export default function HeroSection() {
                 transition={{ duration: 0.3 }}
               >
                 <Image
-                  src="/placeholder.svg"
+                  src="/oil.png"
                   alt="ZEENE Hair Oil Bottle"
                   width={400}
                   height={500}

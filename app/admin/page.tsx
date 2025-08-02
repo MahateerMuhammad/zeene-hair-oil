@@ -19,6 +19,9 @@ interface Product {
   description: string | null
   image_url: string | null
   created_at: string
+  is_on_sale: boolean | null
+  sale_price: number | null
+  sale_percentage: number | null
 }
 
 interface Order {
@@ -46,6 +49,9 @@ export default function AdminDashboard() {
     price: "",
     description: "",
     image_url: "",
+    is_on_sale: false,
+    sale_price: "",
+    sale_percentage: "",
   })
   const [imageFiles, setImageFiles] = useState<File[]>([])
   const [uploadingImages, setUploadingImages] = useState(false)
@@ -205,6 +211,9 @@ export default function AdminDashboard() {
         price: validation.data!.price,
         description: validation.data!.description ? sanitizeInput(validation.data!.description) : null,
         image_url: imageUrl || null,
+        is_on_sale: productForm.is_on_sale,
+        sale_price: productForm.is_on_sale && productForm.sale_price ? parseFloat(productForm.sale_price) : null,
+        sale_percentage: productForm.is_on_sale && productForm.sale_percentage ? parseInt(productForm.sale_percentage) : null,
       }
 
       if (editingProduct) {
@@ -217,7 +226,7 @@ export default function AdminDashboard() {
 
       setShowProductModal(false)
       setEditingProduct(null)
-      setProductForm({ name: "", price: "", description: "", image_url: "" })
+      setProductForm({ name: "", price: "", description: "", image_url: "", is_on_sale: false, sale_price: "", sale_percentage: "" })
       setImageFiles([])
       setValidationErrors([])
       setSubmitError("")
@@ -268,10 +277,13 @@ export default function AdminDashboard() {
         price: product.price.toString(),
         description: product.description || "",
         image_url: product.image_url || "",
+        is_on_sale: product.is_on_sale || false,
+        sale_price: product.sale_price ? product.sale_price.toString() : "",
+        sale_percentage: product.sale_percentage ? product.sale_percentage.toString() : "",
       })
     } else {
       setEditingProduct(null)
-      setProductForm({ name: "", price: "", description: "", image_url: "" })
+      setProductForm({ name: "", price: "", description: "", image_url: "", is_on_sale: false, sale_price: "", sale_percentage: "" })
     }
     setImageFiles([])
     setValidationErrors([])
@@ -465,9 +477,30 @@ export default function AdminDashboard() {
                           className="w-full h-48 object-cover"
                         />
                         <div className="p-4">
-                          <h3 className="font-semibold text-[#1B1B1B] mb-2">{product.name}</h3>
+                          <div className="flex items-center justify-between mb-2">
+                            <h3 className="font-semibold text-[#1B1B1B]">{product.name}</h3>
+                            {product.is_on_sale && (
+                              <span className="bg-red-500 text-white px-2 py-1 rounded-full text-xs font-semibold">
+                                ON SALE
+                              </span>
+                            )}
+                          </div>
                           <p className="text-sm text-gray-600 mb-2">{product.description}</p>
-                          <p className="text-lg font-bold text-[#1F8D9D] mb-4">PKR {product.price}</p>
+                          <div className="mb-4">
+                            {product.is_on_sale && product.sale_price ? (
+                              <div className="flex items-center space-x-2">
+                                <span className="text-sm text-gray-500 line-through">PKR {product.price}</span>
+                                <span className="text-lg font-bold text-[#1F8D9D]">PKR {product.sale_price}</span>
+                                {product.sale_percentage && (
+                                  <span className="text-xs bg-red-100 text-red-800 px-2 py-1 rounded">
+                                    -{product.sale_percentage}%
+                                  </span>
+                                )}
+                              </div>
+                            ) : (
+                              <p className="text-lg font-bold text-[#1F8D9D]">PKR {product.price}</p>
+                            )}
+                          </div>
 
                           <div className="flex space-x-2">
                             <button
@@ -634,6 +667,70 @@ export default function AdminDashboard() {
                         e.currentTarget.style.display = 'none'
                       }}
                     />
+                  </div>
+                )}
+              </div>
+
+              {/* Sale Settings */}
+              <div className="space-y-4 pt-4 border-t border-gray-200">
+                <h4 className="text-lg font-medium text-[#1B1B1B]">Sale Settings</h4>
+                
+                <div className="flex items-center space-x-3">
+                  <input
+                    type="checkbox"
+                    id="is_on_sale"
+                    checked={productForm.is_on_sale}
+                    onChange={(e) => setProductForm({ ...productForm, is_on_sale: e.target.checked })}
+                    className="w-4 h-4 text-[#1F8D9D] bg-gray-100 border-gray-300 rounded focus:ring-[#1F8D9D] focus:ring-2"
+                  />
+                  <label htmlFor="is_on_sale" className="text-sm font-medium text-[#1B1B1B]">
+                    Put this product on sale
+                  </label>
+                </div>
+
+                {productForm.is_on_sale && (
+                  <div className="grid grid-cols-2 gap-4 ml-7">
+                    <div>
+                      <label className="block text-sm font-medium text-[#1B1B1B] mb-2">Sale Price (PKR)</label>
+                      <input
+                        type="number"
+                        step="0.01"
+                        value={productForm.sale_price}
+                        onChange={(e) => {
+                          const salePrice = parseFloat(e.target.value) || 0;
+                          const originalPrice = parseFloat(productForm.price) || 0;
+                          const percentage = originalPrice > 0 ? Math.round(((originalPrice - salePrice) / originalPrice) * 100) : 0;
+                          setProductForm({ 
+                            ...productForm, 
+                            sale_price: e.target.value,
+                            sale_percentage: percentage > 0 ? percentage.toString() : ""
+                          });
+                        }}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#1F8D9D] focus:border-transparent text-sm"
+                        placeholder="Sale price"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-[#1B1B1B] mb-2">Discount %</label>
+                      <input
+                        type="number"
+                        min="1"
+                        max="99"
+                        value={productForm.sale_percentage}
+                        onChange={(e) => {
+                          const percentage = parseInt(e.target.value) || 0;
+                          const originalPrice = parseFloat(productForm.price) || 0;
+                          const salePrice = originalPrice > 0 ? originalPrice - (originalPrice * percentage / 100) : 0;
+                          setProductForm({ 
+                            ...productForm, 
+                            sale_percentage: e.target.value,
+                            sale_price: salePrice > 0 ? salePrice.toFixed(2) : ""
+                          });
+                        }}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#1F8D9D] focus:border-transparent text-sm"
+                        placeholder="Discount %"
+                      />
+                    </div>
                   </div>
                 )}
               </div>

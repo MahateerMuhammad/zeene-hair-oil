@@ -12,6 +12,9 @@ interface Product {
   price: number
   description: string | null
   image_url: string | null
+  is_on_sale: boolean | null
+  sale_price: number | null
+  sale_percentage: number | null
 }
 
 export default function FeaturedProducts() {
@@ -93,7 +96,7 @@ export default function FeaturedProducts() {
           {products.map((product, index) => (
             <motion.div
               key={product.id}
-              className="bg-white rounded-2xl shadow-lg overflow-hidden hover:shadow-xl transition-all duration-300"
+              className="bg-white rounded-2xl shadow-lg overflow-hidden hover:shadow-xl transition-all duration-300 relative"
               initial={{ opacity: 0, y: 50 }}
               whileInView={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.5, delay: index * 0.1 }}
@@ -103,6 +106,11 @@ export default function FeaturedProducts() {
                 boxShadow: "0 25px 50px -12px rgba(0, 0, 0, 0.25)"
               }}
             >
+              {product.is_on_sale && product.sale_percentage && (
+                <div className="absolute top-4 left-4 bg-red-500 text-white px-3 py-1 rounded-full text-sm font-semibold z-10">
+                  -{product.sale_percentage}% OFF
+                </div>
+              )}
               <div className="aspect-square overflow-hidden">
                 <motion.img
                   src={product.image_url || "/placeholder.svg?height=300&width=300&query=hair oil bottle"}
@@ -117,17 +125,26 @@ export default function FeaturedProducts() {
                 <h3 className="text-xl font-semibold text-[#1B1B1B] mb-2">{product.name}</h3>
                 <p className="text-gray-600 mb-4 line-clamp-2">{product.description}</p>
                 <div className="flex items-center justify-between">
-                  <span className="text-2xl font-bold text-[#1F8D9D]">${product.price.toFixed(2)}</span>
+                  <div className="flex items-center space-x-2">
+                    {product.is_on_sale && product.sale_price ? (
+                      <>
+                        <span className="text-lg text-gray-500 line-through">PKR {product.price.toFixed(0)}</span>
+                        <span className="text-2xl font-bold text-[#1F8D9D]">PKR {product.sale_price.toFixed(0)}</span>
+                      </>
+                    ) : (
+                      <span className="text-2xl font-bold text-[#1F8D9D]">PKR {product.price.toFixed(0)}</span>
+                    )}
+                  </div>
                   <motion.div
                     whileHover={{ scale: 1.05 }}
                     whileTap={{ scale: 0.95 }}
                   >
                     <Link
-                      href="/products"
+                      href={`/products/${product.id}`}
                       className="flex items-center space-x-2 px-4 py-2 bg-[#1F8D9D] text-white rounded-full hover:bg-[#186F7B] transition-colors duration-300"
                     >
                       <ShoppingCart className="w-4 h-4" />
-                      <span>Order Now</span>
+                      <span>View Details</span>
                     </Link>
                   </motion.div>
                 </div>

@@ -3,10 +3,11 @@
 import type React from "react"
 
 import { useState, useEffect } from "react"
+import Link from "next/link"
 import Navigation from "@/components/navigation"
 import { supabase } from "@/lib/supabase"
 import { useAuth } from "@/contexts/auth-context"
-import { ShoppingCart, X, Phone, MapPin, User } from "lucide-react"
+import { ShoppingCart, X, Phone, MapPin, User, Plus, Minus, Eye } from "lucide-react"
 
 interface Product {
   id: string
@@ -14,12 +15,16 @@ interface Product {
   price: number
   description: string | null
   image_url: string | null
+  is_on_sale: boolean | null
+  sale_price: number | null
+  sale_percentage: number | null
 }
 
 interface OrderFormData {
   customer_name: string
   address: string
   phone: string
+  quantity: number
 }
 
 export default function ProductsPage() {
@@ -31,6 +36,7 @@ export default function ProductsPage() {
     customer_name: "",
     address: "",
     phone: "",
+    quantity: 1,
   })
   const [orderLoading, setOrderLoading] = useState(false)
   const [orderSuccess, setOrderSuccess] = useState(false)
@@ -75,6 +81,7 @@ export default function ProductsPage() {
         customer_name: orderForm.customer_name,
         address: orderForm.address,
         phone: orderForm.phone,
+        quantity: orderForm.quantity,
         status: "pending",
       })
 
@@ -84,7 +91,7 @@ export default function ProductsPage() {
       setTimeout(() => {
         setShowOrderModal(false)
         setOrderSuccess(false)
-        setOrderForm({ customer_name: "", address: "", phone: "" })
+        setOrderForm({ customer_name: "", address: "", phone: "", quantity: 1 })
       }, 2000)
     } catch (error) {
       console.error("Error placing order:", error)
@@ -123,8 +130,13 @@ export default function ProductsPage() {
           {products.map((product) => (
             <div
               key={product.id}
-              className="bg-white rounded-2xl shadow-lg overflow-hidden hover:shadow-xl transition-all duration-300 transform hover:-translate-y-2"
+              className="bg-white rounded-2xl shadow-lg overflow-hidden hover:shadow-xl transition-all duration-300 transform hover:-translate-y-2 relative"
             >
+              {product.is_on_sale && product.sale_percentage && (
+                <div className="absolute top-4 left-4 bg-red-500 text-white px-3 py-1 rounded-full text-sm font-semibold z-10">
+                  -{product.sale_percentage}% OFF
+                </div>
+              )}
               <div className="aspect-square overflow-hidden">
                 <img
                   src={product.image_url || "/placeholder.svg?height=300&width=300&query=hair oil bottle"}
@@ -137,14 +149,32 @@ export default function ProductsPage() {
                 <h3 className="text-xl font-semibold text-[#1B1B1B] mb-2">{product.name}</h3>
                 <p className="text-gray-600 mb-4">{product.description}</p>
                 <div className="flex items-center justify-between">
-                  <span className="text-2xl font-bold text-[#1F8D9D]">${product.price.toFixed(2)}</span>
-                  <button
-                    onClick={() => handleOrderNow(product)}
-                    className="flex items-center space-x-2 px-4 py-2 bg-[#1F8D9D] text-white rounded-full hover:bg-[#186F7B] transition-colors duration-300"
-                  >
-                    <ShoppingCart className="w-4 h-4" />
-                    <span>Order Now</span>
-                  </button>
+                  <div className="flex items-center space-x-2">
+                    {product.is_on_sale && product.sale_price ? (
+                      <>
+                        <span className="text-lg text-gray-500 line-through">PKR {product.price.toFixed(0)}</span>
+                        <span className="text-2xl font-bold text-[#1F8D9D]">PKR {product.sale_price.toFixed(0)}</span>
+                      </>
+                    ) : (
+                      <span className="text-2xl font-bold text-[#1F8D9D]">PKR {product.price.toFixed(0)}</span>
+                    )}
+                  </div>
+                  <div className="flex space-x-2">
+                    <Link
+                      href={`/products/${product.id}`}
+                      className="flex items-center space-x-2 px-4 py-2 bg-gray-200 text-[#1F8D9D] rounded-full hover:bg-gray-300 transition-colors duration-300"
+                    >
+                      <Eye className="w-4 h-4" />
+                      <span>View Details</span>
+                    </Link>
+                    <button
+                      onClick={() => handleOrderNow(product)}
+                      className="flex items-center space-x-2 px-4 py-2 bg-[#1F8D9D] text-white rounded-full hover:bg-[#186F7B] transition-colors duration-300"
+                    >
+                      <ShoppingCart className="w-4 h-4" />
+                      <span>Order Now</span>
+                    </button>
+                  </div>
                 </div>
               </div>
             </div>
@@ -182,9 +212,48 @@ export default function ProductsPage() {
             ) : (
               <form onSubmit={handleOrderSubmit} className="space-y-4">
                 <div className="bg-[#F9F9F9] p-4 rounded-lg mb-4">
-                  <div className="flex items-center justify-between">
+                  <div className="flex items-center justify-between mb-3">
                     <span className="font-semibold">{selectedProduct.name}</span>
-                    <span className="text-[#1F8D9D] font-bold">${selectedProduct.price.toFixed(2)}</span>
+                    <div className="text-right">
+                      {selectedProduct.is_on_sale && selectedProduct.sale_price ? (
+                        <>
+                          <span className="text-sm text-gray-500 line-through block">PKR {selectedProduct.price.toFixed(0)}</span>
+                          <span className="text-[#1F8D9D] font-bold">PKR {selectedProduct.sale_price.toFixed(0)} each</span>
+                        </>
+                      ) : (
+                        <span className="text-[#1F8D9D] font-bold">PKR {selectedProduct.price.toFixed(0)} each</span>
+                      )}
+                    </div>
+                  </div>
+                  
+                  {/* Quantity Selector */}
+                  <div className="flex items-center justify-between mb-3">
+                    <span className="text-sm font-medium text-[#1B1B1B]">Quantity:</span>
+                    <div className="flex items-center space-x-3">
+                      <button
+                        type="button"
+                        onClick={() => setOrderForm({ ...orderForm, quantity: Math.max(1, orderForm.quantity - 1) })}
+                        className="w-8 h-8 rounded-full bg-gray-200 hover:bg-gray-300 flex items-center justify-center transition-colors"
+                      >
+                        <Minus className="w-4 h-4" />
+                      </button>
+                      <span className="w-8 text-center font-semibold">{orderForm.quantity}</span>
+                      <button
+                        type="button"
+                        onClick={() => setOrderForm({ ...orderForm, quantity: orderForm.quantity + 1 })}
+                        className="w-8 h-8 rounded-full bg-gray-200 hover:bg-gray-300 flex items-center justify-center transition-colors"
+                      >
+                        <Plus className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </div>
+                  
+                  {/* Total Price */}
+                  <div className="flex items-center justify-between border-t pt-2">
+                    <span className="font-semibold">Total:</span>
+                    <span className="text-[#1F8D9D] font-bold text-lg">
+                      PKR {((selectedProduct.is_on_sale && selectedProduct.sale_price ? selectedProduct.sale_price : selectedProduct.price) * orderForm.quantity).toFixed(0)}
+                    </span>
                   </div>
                   <p className="text-sm text-gray-600 mt-1">Cash on Delivery</p>
                 </div>
