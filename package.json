@@ -4,13 +4,19 @@
   "private": true,
   "scripts": {
     "build": "next build",
+    "build:analyze": "ANALYZE=true npm run build",
     "dev": "next dev",
     "dev:turbo": "next dev --turbo",
     "dev:optimize": "node scripts/dev-optimize.js",
     "lint": "next lint",
+    "lint:fix": "next lint --fix",
     "start": "next start",
-    "clean": "rm -rf .next && rm -rf node_modules/.cache",
-    "analyze": "ANALYZE=true npm run build"
+    "clean": "rm -rf .next && rm -rf node_modules/.cache && rm -rf .turbo",
+    "clean:full": "npm run clean && rm -rf node_modules && npm install",
+    "analyze": "ANALYZE=true npm run build",
+    "type-check": "tsc --noEmit",
+    "security-audit": "npm audit --audit-level moderate",
+    "performance-test": "npm run build && npm run start"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.9.1",
@@ -73,6 +79,7 @@
     "@types/node": "^22",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "cssnano": "^6.0.1",
     "eslint": "^9.32.0",
     "eslint-config-next": "^15.4.5",
     "postcss": "^8.5",

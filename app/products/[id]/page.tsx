@@ -126,6 +126,33 @@ export default function ProductDetailPage() {
 
     setOrderLoading(true)
     try {
+      // First, ensure the user exists in the users table
+      const { data: userData, error: userError } = await supabase
+        .from("users")
+        .select("id, role")
+        .eq("id", user.id)
+        .single()
+
+      if (userError && userError.code === 'PGRST116') {
+        // User doesn't exist in users table, create them
+        const { error: insertUserError } = await supabase
+          .from("users")
+          .insert({
+            id: user.id,
+            email: user.email,
+            role: 'user'
+          })
+
+        if (insertUserError) {
+          console.error("Error creating user record:", insertUserError)
+          throw new Error("Failed to create user record. Please try again.")
+        }
+      } else if (userError) {
+        console.error("Error checking user:", userError)
+        throw new Error("User verification failed. Please try again.")
+      }
+
+      // Now insert the order
       const { data: orderData, error } = await supabase.from("orders").insert({
         user_id: user.id,
         product_id: product.id,
@@ -136,7 +163,10 @@ export default function ProductDetailPage() {
         status: "pending",
       }).select().single()
 
-      if (error) throw error
+      if (error) {
+        console.error("Database error details:", error)
+        throw error
+      }
 
       // Send email notification to admin
       try {
@@ -180,7 +210,21 @@ export default function ProductDetailPage() {
       }, 2000)
     } catch (error) {
       console.error("Error placing order:", error)
-      alert("Failed to place order. Please try again.")
+      
+      // Provide more specific error messages
+      let errorMessage = "Failed to place order. Please try again."
+      
+      if (error instanceof Error) {
+        if (error.message.includes("user record")) {
+          errorMessage = "Account setup issue. Please log out and log back in, then try again."
+        } else if (error.message.includes("verification failed")) {
+          errorMessage = "Account verification failed. Please contact support."
+        } else if (error.message.includes("permission")) {
+          errorMessage = "Permission denied. Please ensure you're logged in properly."
+        }
+      }
+      
+      alert(errorMessage)
     } finally {
       setOrderLoading(false)
     }

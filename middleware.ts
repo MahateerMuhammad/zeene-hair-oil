@@ -46,11 +46,16 @@ export async function middleware(req: NextRequest) {
   // Create response with security headers
   const response = NextResponse.next()
   
-  // Security headers
+  // Enhanced security headers
   response.headers.set('X-Frame-Options', 'DENY')
   response.headers.set('X-Content-Type-Options', 'nosniff')
   response.headers.set('X-XSS-Protection', '1; mode=block')
   response.headers.set('Referrer-Policy', 'strict-origin-when-cross-origin')
+  response.headers.set('X-DNS-Prefetch-Control', 'on')
+  response.headers.set('X-Download-Options', 'noopen')
+  response.headers.set('Cross-Origin-Embedder-Policy', 'unsafe-none')
+  response.headers.set('Cross-Origin-Opener-Policy', 'same-origin-allow-popups')
+  response.headers.set('Cross-Origin-Resource-Policy', 'cross-origin')
   
   // Generate nonce for inline scripts
   const generateNonce = () => {

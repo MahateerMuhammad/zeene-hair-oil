@@ -311,10 +311,33 @@
 input, textarea {
   will-change: auto;
   transform: translateZ(0);
+  /* Improve text rendering */
+  text-rendering: optimizeSpeed;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
 input:focus, textarea:focus {
   will-change: transform;
+  /* Improve focus performance */
+  contain: layout style paint;
+}
+
+/* Performance optimizations for animations */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* Optimize font loading */
+@font-face {
+  font-display: swap; /* Improve font loading performance */
 }
 
 /* Scroll indicators */
