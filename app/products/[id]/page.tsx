@@ -39,12 +39,10 @@ export default function ProductDetailPage() {
   const [product, setProduct] = useState<Product | null>(null)
   const [loading, setLoading] = useState(true)
   const [showOrderModal, setShowOrderModal] = useState(false)
-  const [orderForm, setOrderForm] = useState<OrderFormData>({
-    customer_name: "",
-    address: "",
-    phone: "",
-    quantity: 1,
-  })
+  const [customerName, setCustomerName] = useState("")
+  const [address, setAddress] = useState("")
+  const [phone, setPhone] = useState("")
+  const [quantity, setQuantity] = useState(1)
   const [orderLoading, setOrderLoading] = useState(false)
   const [orderSuccess, setOrderSuccess] = useState(false)
   const [imageZoomed, setImageZoomed] = useState(false)
@@ -97,9 +95,9 @@ export default function ProductDetailPage() {
     }
 
     // Validate inputs
-    const sanitizedName = sanitizeInput(orderForm.customer_name)
-    const sanitizedAddress = sanitizeInput(orderForm.address)
-    const sanitizedPhone = sanitizeInput(orderForm.phone)
+    const sanitizedName = sanitizeInput(customerName)
+    const sanitizedAddress = sanitizeInput(address)
+    const sanitizedPhone = sanitizeInput(phone)
 
     if (!validateName(sanitizedName)) {
       alert("Please enter a valid name (2-50 characters, letters only)")
@@ -116,7 +114,7 @@ export default function ProductDetailPage() {
       return
     }
 
-    if (!validateQuantity(orderForm.quantity)) {
+    if (!validateQuantity(quantity)) {
       alert("Please enter a valid quantity (1-100)")
       return
     }
@@ -134,7 +132,7 @@ export default function ProductDetailPage() {
         customer_name: sanitizedName,
         address: sanitizedAddress,
         phone: sanitizedPhone,
-        quantity: orderForm.quantity,
+        quantity: quantity,
         status: "pending",
       }).select().single()
 
@@ -144,7 +142,7 @@ export default function ProductDetailPage() {
       try {
         const totalAmount = (product.is_on_sale && product.sale_price 
           ? product.sale_price 
-          : product.price) * orderForm.quantity
+          : product.price) * quantity
 
         await fetch('/api/send-order-email', {
           method: 'POST',
@@ -162,7 +160,7 @@ export default function ProductDetailPage() {
             productPrice: product.is_on_sale && product.sale_price 
               ? product.sale_price 
               : product.price,
-            quantity: orderForm.quantity,
+            quantity: quantity,
             totalAmount: totalAmount
           })
         })
@@ -175,7 +173,10 @@ export default function ProductDetailPage() {
       setTimeout(() => {
         setShowOrderModal(false)
         setOrderSuccess(false)
-        setOrderForm({ customer_name: "", address: "", phone: "", quantity: 1 })
+        setCustomerName("")
+        setAddress("")
+        setPhone("")
+        setQuantity(1)
       }, 2000)
     } catch (error) {
       console.error("Error placing order:", error)
@@ -548,30 +549,20 @@ export default function ProductDetailPage() {
                   
                   <div className="flex items-center space-x-6">
                     <motion.button
-                      onClick={() => setOrderForm({ ...orderForm, quantity: Math.max(1, orderForm.quantity - 1) })}
-                      className="w-14 h-14 rounded-2xl bg-gradient-to-br from-[#1F8D9D] to-[#186F7B] hover:from-[#186F7B] hover:to-[#1F8D9D] text-white flex items-center justify-center transition-all duration-300 shadow-lg hover:shadow-xl"
-                      whileHover={{ scale: 1.1, rotate: -5 }}
-                      whileTap={{ scale: 0.9 }}
-                      disabled={orderForm.quantity <= 1}
+                      onClick={() => setQuantity(Math.max(1, quantity - 1))}
+                      className="w-14 h-14 rounded-2xl bg-gradient-to-br from-[#1F8D9D] to-[#186F7B] hover:from-[#186F7B] hover:to-[#1F8D9D] text-white flex items-center justify-center transition-colors duration-200 shadow-lg hover:shadow-xl"
+                      disabled={quantity <= 1}
                     >
                       <Minus className="w-6 h-6" />
                     </motion.button>
                     
-                    <motion.div
-                      className="w-20 h-16 bg-gradient-to-br from-[#1F8D9D] to-[#3E7346] text-white rounded-2xl flex items-center justify-center shadow-lg"
-                      key={orderForm.quantity}
-                      initial={{ scale: 1.2 }}
-                      animate={{ scale: 1 }}
-                      transition={{ type: "spring", stiffness: 300 }}
-                    >
-                      <span className="font-bold text-2xl">{orderForm.quantity}</span>
-                    </motion.div>
+                    <div className="w-20 h-16 bg-gradient-to-br from-[#1F8D9D] to-[#3E7346] text-white rounded-2xl flex items-center justify-center shadow-lg">
+                      <span className="font-bold text-2xl">{quantity}</span>
+                    </div>
                     
                     <motion.button
-                      onClick={() => setOrderForm({ ...orderForm, quantity: orderForm.quantity + 1 })}
-                      className="w-14 h-14 rounded-2xl bg-gradient-to-br from-[#1F8D9D] to-[#186F7B] hover:from-[#186F7B] hover:to-[#1F8D9D] text-white flex items-center justify-center transition-all duration-300 shadow-lg hover:shadow-xl"
-                      whileHover={{ scale: 1.1, rotate: 5 }}
-                      whileTap={{ scale: 0.9 }}
+                      onClick={() => setQuantity(quantity + 1)}
+                      className="w-14 h-14 rounded-2xl bg-gradient-to-br from-[#1F8D9D] to-[#186F7B] hover:from-[#186F7B] hover:to-[#1F8D9D] text-white flex items-center justify-center transition-colors duration-200 shadow-lg hover:shadow-xl"
                     >
                       <Plus className="w-6 h-6" />
                     </motion.button>
@@ -595,10 +586,10 @@ export default function ProductDetailPage() {
                       {product.is_on_sale && product.sale_price ? (
                         <>
                           <div className="text-sm text-gray-500 line-through font-medium">
-                            PKR {(product.price * orderForm.quantity).toFixed(0)}
+                            PKR {(product.price * quantity).toFixed(0)}
                           </div>
                           <div className="text-3xl font-bold text-[#1F8D9D]">
-                            PKR {(product.sale_price * orderForm.quantity).toFixed(0)}
+                            PKR {(product.sale_price * quantity).toFixed(0)}
                           </div>
                           <motion.div
                             className="text-sm text-green-600 font-bold bg-green-50 px-3 py-1 rounded-full inline-block mt-1"
@@ -606,12 +597,12 @@ export default function ProductDetailPage() {
                             animate={{ scale: 1 }}
                             transition={{ delay: 1, type: "spring" }}
                           >
-                            💰 Save PKR {((product.price - product.sale_price) * orderForm.quantity).toFixed(0)}
+                            💰 Save PKR {((product.price - product.sale_price) * quantity).toFixed(0)}
                           </motion.div>
                         </>
                       ) : (
                         <span className="text-3xl font-bold text-[#1F8D9D]">
-                          PKR {(product.price * orderForm.quantity).toFixed(0)}
+                          PKR {(product.price * quantity).toFixed(0)}
                         </span>
                       )}
                     </div>
@@ -754,7 +745,7 @@ export default function ProductDetailPage() {
           exit={{ opacity: 0 }}
         >
           <motion.div
-            className="bg-white rounded-3xl max-w-lg w-full p-8 shadow-3xl relative overflow-hidden"
+            className="bg-white rounded-3xl max-w-lg w-full shadow-3xl relative overflow-hidden max-h-[85vh] flex flex-col"
             initial={{ opacity: 0, scale: 0.8, y: 50 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.8, y: 50 }}
@@ -763,7 +754,8 @@ export default function ProductDetailPage() {
             {/* Background Pattern */}
             <div className="absolute inset-0 bg-gradient-to-br from-[#1F8D9D]/5 via-transparent to-[#3E7346]/5"></div>
             
-            <div className="relative z-10">
+            {/* Fixed Header */}
+            <div className="relative z-10 flex-shrink-0 p-8 pb-0">
               <div className="flex items-center justify-between mb-8">
                 <div className="flex items-center space-x-3">
                   <div className="w-12 h-12 bg-gradient-to-br from-[#1F8D9D] to-[#3E7346] rounded-2xl flex items-center justify-center">
@@ -783,6 +775,10 @@ export default function ProductDetailPage() {
                   <X className="w-5 h-5 text-gray-600" />
                 </motion.button>
               </div>
+            </div>
+
+            {/* Scrollable Content */}
+            <div className="relative z-10 flex-1 force-scrollbar smooth-scroll scroll-container px-8 pb-8" style={{ minHeight: '300px', maxHeight: '65vh' }}>
 
               {orderSuccess ? (
                 <motion.div
@@ -859,7 +855,7 @@ export default function ProductDetailPage() {
                     <div className="flex items-center justify-between mb-4 py-2 border-t border-gray-200">
                       <span className="font-medium text-[#1B1B1B] flex items-center space-x-2">
                         <span>Quantity:</span>
-                        <span className="bg-[#1F8D9D] text-white px-3 py-1 rounded-full text-sm font-bold">{orderForm.quantity}</span>
+                        <span className="bg-[#1F8D9D] text-white px-3 py-1 rounded-full text-sm font-bold">{quantity}</span>
                       </span>
                     </div>
                     
@@ -867,7 +863,7 @@ export default function ProductDetailPage() {
                       <span className="text-xl font-bold text-[#1B1B1B]">Total Amount:</span>
                       <div className="text-right">
                         <span className="text-2xl font-bold text-[#1F8D9D]">
-                          PKR {((product.is_on_sale && product.sale_price ? product.sale_price : product.price) * orderForm.quantity).toFixed(0)}
+                          PKR {((product.is_on_sale && product.sale_price ? product.sale_price : product.price) * quantity).toFixed(0)}
                         </span>
                         <p className="text-sm text-gray-600 flex items-center space-x-1 mt-1">
                           <Truck className="w-4 h-4" />
@@ -878,12 +874,8 @@ export default function ProductDetailPage() {
                   </motion.div>
 
                   {/* Enhanced Form Fields */}
-                  <div className="space-y-6">
-                    <motion.div
-                      initial={{ opacity: 0, x: -20 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      transition={{ delay: 0.2 }}
-                    >
+                  <div className="space-y-5">
+                    <div>
                       <label className="block text-sm font-bold text-[#1B1B1B] mb-3 flex items-center space-x-2">
                         <User className="w-4 h-4 text-[#1F8D9D]" />
                         <span>Full Name</span>
@@ -892,20 +884,16 @@ export default function ProductDetailPage() {
                         <input
                           type="text"
                           required
-                          value={orderForm.customer_name}
-                          onChange={(e) => setOrderForm({ ...orderForm, customer_name: e.target.value })}
-                          className="w-full pl-12 pr-4 py-4 border-2 border-gray-200 rounded-2xl focus:ring-4 focus:ring-[#1F8D9D]/20 focus:border-[#1F8D9D] transition-all duration-300 text-lg"
+                          value={customerName}
+                          onChange={(e) => setCustomerName(e.target.value)}
+                          className="w-full pl-12 pr-4 py-4 border-2 border-gray-200 rounded-2xl focus:ring-2 focus:ring-[#1F8D9D]/30 focus:border-[#1F8D9D] transition-colors duration-150 text-lg"
                           placeholder="Enter your full name"
                         />
                         <User className="absolute left-4 top-1/2 transform -translate-y-1/2 text-[#1F8D9D] w-5 h-5" />
                       </div>
-                    </motion.div>
+                    </div>
 
-                    <motion.div
-                      initial={{ opacity: 0, x: -20 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      transition={{ delay: 0.3 }}
-                    >
+                    <div>
                       <label className="block text-sm font-bold text-[#1B1B1B] mb-3 flex items-center space-x-2">
                         <MapPin className="w-4 h-4 text-[#1F8D9D]" />
                         <span>Delivery Address</span>
@@ -913,21 +901,17 @@ export default function ProductDetailPage() {
                       <div className="relative">
                         <textarea
                           required
-                          value={orderForm.address}
-                          onChange={(e) => setOrderForm({ ...orderForm, address: e.target.value })}
-                          className="w-full pl-12 pr-4 py-4 border-2 border-gray-200 rounded-2xl focus:ring-4 focus:ring-[#1F8D9D]/20 focus:border-[#1F8D9D] transition-all duration-300 text-lg resize-none"
-                          placeholder="Enter your complete delivery address"
+                          value={address}
+                          onChange={(e) => setAddress(e.target.value)}
+                          className="w-full pl-12 pr-4 py-4 border-2 border-gray-200 rounded-2xl focus:ring-2 focus:ring-[#1F8D9D]/30 focus:border-[#1F8D9D] transition-colors duration-150 text-lg resize-none min-h-[100px] leading-relaxed"
+                          placeholder="Street address, area, city, postal code"
                           rows={3}
                         />
-                        <MapPin className="absolute left-4 top-4 text-[#1F8D9D] w-5 h-5" />
+                        <MapPin className="absolute left-4 top-5 text-[#1F8D9D] w-5 h-5" />
                       </div>
-                    </motion.div>
+                    </div>
 
-                    <motion.div
-                      initial={{ opacity: 0, x: -20 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      transition={{ delay: 0.4 }}
-                    >
+                    <div>
                       <label className="block text-sm font-bold text-[#1B1B1B] mb-3 flex items-center space-x-2">
                         <Phone className="w-4 h-4 text-[#1F8D9D]" />
                         <span>Phone Number</span>
@@ -936,46 +920,39 @@ export default function ProductDetailPage() {
                         <input
                           type="tel"
                           required
-                          value={orderForm.phone}
-                          onChange={(e) => setOrderForm({ ...orderForm, phone: e.target.value })}
-                          className="w-full pl-12 pr-4 py-4 border-2 border-gray-200 rounded-2xl focus:ring-4 focus:ring-[#1F8D9D]/20 focus:border-[#1F8D9D] transition-all duration-300 text-lg"
+                          value={phone}
+                          onChange={(e) => setPhone(e.target.value)}
+                          className="w-full pl-12 pr-4 py-4 border-2 border-gray-200 rounded-2xl focus:ring-2 focus:ring-[#1F8D9D]/30 focus:border-[#1F8D9D] transition-colors duration-150 text-lg"
                           placeholder="Enter your phone number"
                         />
                         <Phone className="absolute left-4 top-1/2 transform -translate-y-1/2 text-[#1F8D9D] w-5 h-5" />
                       </div>
-                    </motion.div>
+                    </div>
                   </div>
 
-                  <motion.button
+                  <button
                     type="submit"
                     disabled={orderLoading}
-                    className="w-full py-5 bg-gradient-to-r from-[#1F8D9D] to-[#3E7346] hover:from-[#186F7B] hover:to-[#2F5A35] text-white rounded-2xl font-bold text-lg transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg hover:shadow-xl flex items-center justify-center space-x-3 relative overflow-hidden group mt-8"
-                    whileHover={{ scale: 1.02 }}
-                    whileTap={{ scale: 0.98 }}
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.5 }}
+                    className="w-full py-5 bg-gradient-to-r from-[#1F8D9D] to-[#3E7346] hover:from-[#186F7B] hover:to-[#2F5A35] text-white rounded-2xl font-bold text-lg transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg hover:shadow-xl flex items-center justify-center space-x-3 mt-8"
                   >
-                    <div className="absolute inset-0 bg-gradient-to-r from-white/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
                     {orderLoading ? (
                       <>
-                        <motion.div
-                          className="w-5 h-5 border-2 border-white border-t-transparent rounded-full"
-                          animate={{ rotate: 360 }}
-                          transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
-                        />
-                        <span className="relative z-10">Placing Order...</span>
+                        <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                        <span>Placing Order...</span>
                       </>
                     ) : (
                       <>
-                        <ShoppingCart className="w-6 h-6 relative z-10" />
-                        <span className="relative z-10">Place Order - Cash on Delivery</span>
-                        <span className="relative z-10 text-xl">💳</span>
+                        <ShoppingCart className="w-6 h-6" />
+                        <span>Place Order - Cash on Delivery</span>
+                        <span className="text-xl">💳</span>
                       </>
                     )}
-                  </motion.button>
+                  </button>
                 </form>
               )}
+              
+              {/* Extra padding to ensure scrollable content */}
+              <div className="h-16"></div>
             </div>
           </motion.div>
         </motion.div>

@@ -13,7 +13,7 @@ import { motion, AnimatePresence } from "framer-motion"
 import { sanitizeInput, validateEmail, validatePhone, validateName, validateAddress, validateQuantity, checkRateLimit } from "@/lib/security"
 import ProductImage from "@/components/ui/product-image"
 import ErrorBoundary from "@/components/ui/error-boundary"
-import Loading, { ProductSkeleton } from "@/components/ui/loading"
+import Loading from "@/components/ui/loading"
 
 interface Product {
   id: string
@@ -263,7 +263,12 @@ export default function ProductsPage() {
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: i * 0.1 }}
               >
-                <ProductSkeleton />
+                <div className="bg-white rounded-2xl p-6 shadow-lg border border-gray-100">
+                  <div className="h-48 bg-gradient-to-r from-gray-200 to-gray-300 rounded-xl mb-4 animate-pulse" />
+                  <div className="h-6 bg-gradient-to-r from-gray-200 to-gray-300 rounded-lg mb-2 animate-pulse" />
+                  <div className="h-4 bg-gradient-to-r from-gray-200 to-gray-300 rounded-lg w-3/4 mb-4 animate-pulse" />
+                  <div className="h-8 bg-gradient-to-r from-gray-200 to-gray-300 rounded-lg animate-pulse" />
+                </div>
               </motion.div>
             ))}
           </div>
@@ -501,7 +506,7 @@ export default function ProductsPage() {
                   animate={{ scale: 1, opacity: 1, y: 0 }}
                   exit={{ scale: 0.9, opacity: 0, y: 20 }}
                   transition={{ type: "spring", stiffness: 300, damping: 30 }}
-                  className="bg-white/95 backdrop-blur-sm rounded-3xl max-w-md w-full shadow-2xl border border-white/20 my-4 max-h-[90vh] flex flex-col"
+                  className="bg-white/95 backdrop-blur-sm rounded-3xl max-w-md w-full shadow-2xl border border-white/20 my-4 max-h-[70vh] flex flex-col"
                 >
                   {/* Fixed Header */}
                   <div className="flex-shrink-0 p-4 sm:p-8 pb-0">
@@ -521,7 +526,7 @@ export default function ProductsPage() {
                   </div>
 
                   {/* Scrollable Content */}
-                  <div className="flex-1 overflow-y-auto custom-scrollbar px-4 sm:px-8 pb-4 sm:pb-8">
+                  <div className="flex-1 force-scrollbar smooth-scroll scroll-container px-4 sm:px-8 pb-4 sm:pb-8" style={{ minHeight: '300px', maxHeight: '65vh' }}>
 
                 {orderSuccess ? (
                   <motion.div 
@@ -688,8 +693,16 @@ export default function ProductsPage() {
                         "Place Order (Cash on Delivery)"
                       )}
                     </motion.button>
+                    
+                    {/* Extra padding to ensure scrollable content */}
+                    <div className="h-20"></div>
                   </form>
                 )}
+                
+                {/* Extra padding to ensure scrollable content */}
+                <div className="h-16"></div>
+                
+
                   </div>
                 </motion.div>
               </div>

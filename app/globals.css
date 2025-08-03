@@ -256,17 +256,117 @@
   }
 }
 
+/* Optimized scrollbar - smooth and performant */
+.force-scrollbar {
+  overflow-y: scroll !important;
+  scrollbar-width: thin !important;
+  scrollbar-color: #1f8d9d #f8f9fa !important;
+  scrollbar-gutter: stable !important;
+  /* Optimize for performance */
+  will-change: scroll-position;
+  transform: translateZ(0);
+  -webkit-overflow-scrolling: touch;
+}
+
+/* WebKit browsers (Chrome, Safari, Edge) - Optimized */
+.force-scrollbar::-webkit-scrollbar {
+  width: 12px !important;
+  background: rgba(248, 249, 250, 0.8) !important;
+  border-radius: 6px !important;
+}
+
+.force-scrollbar::-webkit-scrollbar-track {
+  background: rgba(248, 249, 250, 0.5) !important;
+  border-radius: 6px !important;
+  margin: 4px !important;
+}
+
+.force-scrollbar::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, #1f8d9d 0%, #186f7b 100%) !important;
+  border-radius: 6px !important;
+  min-height: 40px !important;
+  border: 2px solid rgba(248, 249, 250, 0.3) !important;
+  transition: all 0.2s ease !important;
+}
+
+.force-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(180deg, #3e7346 0%, #2d5a33 100%) !important;
+  transform: scale(1.05) !important;
+}
+
+.force-scrollbar::-webkit-scrollbar-thumb:active {
+  background: linear-gradient(180deg, #2d5a33 0%, #1f4025 100%) !important;
+}
+
+.force-scrollbar::-webkit-scrollbar-corner {
+  background: transparent !important;
+}
+
+/* Smooth scrolling behavior */
+.smooth-scroll {
+  scroll-behavior: smooth;
+}
+
+/* Optimize input performance */
+input, textarea {
+  will-change: auto;
+  transform: translateZ(0);
+}
+
+input:focus, textarea:focus {
+  will-change: transform;
+}
+
+/* Scroll indicators */
+.scroll-container {
+  position: relative;
+}
+
+.scroll-container::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 20px;
+  background: linear-gradient(to bottom, rgba(255,255,255,0.9), transparent);
+  pointer-events: none;
+  z-index: 10;
+  border-radius: 24px 24px 0 0;
+}
+
+.scroll-container::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 20px;
+  background: linear-gradient(to top, rgba(255,255,255,0.9), transparent);
+  pointer-events: none;
+  z-index: 10;
+  border-radius: 0 0 24px 24px;
+}
+
+/* Fallback for older browsers */
+.custom-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: #1f8d9d #f1f1f1;
+}
+
 .custom-scrollbar::-webkit-scrollbar {
-  width: 6px;
+  width: 8px;
 }
 
 .custom-scrollbar::-webkit-scrollbar-track {
   background: #f1f1f1;
+  border-radius: 4px;
 }
 
 .custom-scrollbar::-webkit-scrollbar-thumb {
   background: #1f8d9d;
-  border-radius: 3px;
+  border-radius: 4px;
+  min-height: 20px;
 }
 
 .custom-scrollbar::-webkit-scrollbar-thumb:hover {
