@@ -33,6 +33,12 @@ interface OrderFormData {
   quantity: number
 }
 
+interface FormErrors {
+  customer_name?: string
+  address?: string
+  phone?: string
+}
+
 export default function ProductsPage() {
   const [products, setProducts] = useState<Product[]>([])
   const [filteredProducts, setFilteredProducts] = useState<Product[]>([])
@@ -50,6 +56,7 @@ export default function ProductsPage() {
   })
   const [orderLoading, setOrderLoading] = useState(false)
   const [orderSuccess, setOrderSuccess] = useState(false)
+  const [formErrors, setFormErrors] = useState<FormErrors>({})
 
   const { user } = useAuth()
 
@@ -60,6 +67,25 @@ export default function ProductsPage() {
   useEffect(() => {
     filterAndSortProducts()
   }, [products, searchQuery, sortBy])
+
+  // Auto-expand textarea when modal opens and reset form when modal closes
+  useEffect(() => {
+    if (showOrderModal) {
+      setTimeout(() => {
+        const textarea = document.querySelector('textarea[placeholder*="delivery address"]') as HTMLTextAreaElement
+        if (textarea) {
+          textarea.style.height = 'auto'
+          textarea.style.height = Math.max(textarea.scrollHeight, 80) + 'px'
+        }
+      }, 100)
+    } else {
+      // Reset form when modal closes
+      setOrderForm({ customer_name: "", address: "", phone: "", quantity: 1 })
+      setFormErrors({})
+      setOrderError(null)
+      setOrderSuccess(false)
+    }
+  }, [showOrderModal, orderForm.address])
 
   const filterAndSortProducts = () => {
     let filtered = products.filter(product =>
@@ -138,51 +164,146 @@ export default function ProductsPage() {
 
   const [orderError, setOrderError] = useState<string | null>(null)
 
+  // Enhanced validation function with detailed error messages
+  const validateField = (field: keyof FormErrors, value: string): string | undefined => {
+    if (!value || value.trim().length === 0) {
+      switch (field) {
+        case 'customer_name':
+          return "Full name is required"
+        case 'address':
+          return "Delivery address is required"
+        case 'phone':
+          return "Phone number is required"
+      }
+    }
+
+    const trimmedValue = value.trim()
+    
+    switch (field) {
+      case 'customer_name':
+        if (trimmedValue.length < 2) {
+          return "Name must be at least 2 characters long"
+        }
+        if (trimmedValue.length > 50) {
+          return "Name cannot exceed 50 characters"
+        }
+        if (!/^[a-zA-Z\s]+$/.test(trimmedValue)) {
+          return "Name can only contain letters and spaces"
+        }
+        if (/^\s|\s$/.test(value)) {
+          return "Name cannot start or end with spaces"
+        }
+        break
+        
+      case 'address':
+        if (trimmedValue.length < 10) {
+          return "Address must be at least 10 characters long"
+        }
+        if (trimmedValue.length > 200) {
+          return "Address cannot exceed 200 characters"
+        }
+        if (!/^[a-zA-Z0-9\s,.-]+$/.test(trimmedValue)) {
+          return "Address contains invalid characters"
+        }
+        // Check for meaningful content (not just numbers or single words)
+        const words = trimmedValue.split(/\s+/).filter(word => word.length > 0)
+        if (words.length < 3) {
+          return "Please provide a complete address with street, area, and city"
+        }
+        break
+        
+      case 'phone':
+        // Remove all non-digit characters for validation
+        const digitsOnly = trimmedValue.replace(/\D/g, '')
+        if (digitsOnly.length < 10) {
+          return "Phone number must be at least 10 digits"
+        }
+        if (digitsOnly.length > 15) {
+          return "Phone number cannot exceed 15 digits"
+        }
+        // Check for valid Pakistani phone number patterns
+        if (!/^(\+92|0092|92|0)?[3-9]\d{8,9}$/.test(digitsOnly)) {
+          return "Please enter a valid Pakistani phone number"
+        }
+        break
+    }
+    return undefined
+  }
+
+  // Handle form field changes with real-time validation
+  const handleFieldChange = (field: keyof OrderFormData, value: string | number) => {
+    setOrderForm(prev => ({ ...prev, [field]: value }))
+    
+    // Clear any existing error for this field
+    if (formErrors[field as keyof FormErrors]) {
+      setFormErrors(prev => ({ ...prev, [field]: undefined }))
+    }
+    
+    // Validate on blur (we'll add onBlur handlers)
+    if (typeof value === 'string' && value.length > 0) {
+      const error = validateField(field as keyof FormErrors, value)
+      if (error) {
+        setFormErrors(prev => ({ ...prev, [field]: error }))
+      }
+    }
+  }
+
   const handleOrderSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setOrderError(null)
+    setFormErrors({})
     
     if (!selectedProduct || !user) {
-      setOrderError("Missing product or user information")
+      setOrderError("Unable to process order. Please refresh the page and try again.")
       return
     }
 
     try {
       // Rate limiting check
       if (!checkRateLimit(user.id, 5, 60000)) {
-        setOrderError("Too many requests. Please wait a minute before trying again.")
+        setOrderError("You're placing orders too quickly. Please wait a minute before trying again.")
         return
       }
 
-      // Validate inputs
+      // Validate all inputs and collect errors
+      const errors: FormErrors = {}
+
+      // Validate each field
+      const nameError = validateField('customer_name', orderForm.customer_name)
+      const addressError = validateField('address', orderForm.address)
+      const phoneError = validateField('phone', orderForm.phone)
+
+      if (nameError) errors.customer_name = nameError
+      if (addressError) errors.address = addressError
+      if (phoneError) errors.phone = phoneError
+
+      // Validate quantity
+      if (!orderForm.quantity || orderForm.quantity < 1) {
+        setOrderError("Please select at least 1 item")
+        return
+      }
+      if (orderForm.quantity > 100) {
+        setOrderError("Maximum quantity allowed is 100 items per order")
+        return
+      }
+
+      // Validate user email
+      if (!user.email || !validateEmail(user.email)) {
+        setOrderError("Your account email is invalid. Please contact support for assistance.")
+        return
+      }
+
+      // If there are validation errors, show them and stop
+      if (Object.keys(errors).length > 0) {
+        setFormErrors(errors)
+        setOrderError("Please fix the errors above before submitting your order.")
+        return
+      }
+
+      // Sanitize inputs after validation
       const sanitizedName = sanitizeInput(orderForm.customer_name)
       const sanitizedAddress = sanitizeInput(orderForm.address)
       const sanitizedPhone = sanitizeInput(orderForm.phone)
-
-      if (!validateName(sanitizedName)) {
-        setOrderError("Please enter a valid name (2-50 characters, letters only)")
-        return
-      }
-
-      if (!validateAddress(sanitizedAddress)) {
-        setOrderError("Please enter a valid address (10-200 characters)")
-        return
-      }
-
-      if (!validatePhone(sanitizedPhone)) {
-        setOrderError("Please enter a valid phone number")
-        return
-      }
-
-      if (!validateQuantity(orderForm.quantity)) {
-        setOrderError("Please enter a valid quantity (1-100)")
-        return
-      }
-
-      if (!validateEmail(user.email || '')) {
-        setOrderError("Invalid user email. Please contact support.")
-        return
-      }
 
       setOrderLoading(true)
       const { data: orderData, error } = await supabase.from("orders").insert({
@@ -233,6 +354,8 @@ export default function ProductsPage() {
         setShowOrderModal(false)
         setOrderSuccess(false)
         setOrderForm({ customer_name: "", address: "", phone: "", quantity: 1 })
+        setFormErrors({})
+        setOrderError(null)
       }, 2000)
     } catch (error) {
       console.error("Error placing order:", error)
@@ -517,7 +640,11 @@ export default function ProductsPage() {
                       <motion.button 
                         whileHover={{ scale: 1.1, rotate: 90 }}
                         whileTap={{ scale: 0.9 }}
-                        onClick={() => setShowOrderModal(false)} 
+                        onClick={() => {
+                          setShowOrderModal(false)
+                          setFormErrors({})
+                          setOrderError(null)
+                        }} 
                         className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-full transition-all duration-300"
                       >
                         <X className="w-6 h-6" />
@@ -535,20 +662,129 @@ export default function ProductsPage() {
                     className="text-center py-8"
                   >
                     <motion.div 
-                      initial={{ scale: 0 }}
-                      animate={{ scale: 1 }}
-                      transition={{ delay: 0.2, type: "spring", stiffness: 200 }}
-                      className="w-20 h-20 bg-gradient-to-r from-green-400 to-green-500 rounded-full flex items-center justify-center mx-auto mb-6"
+                      initial={{ scale: 0, rotate: -180 }}
+                      animate={{ scale: 1, rotate: 0 }}
+                      transition={{ delay: 0.2, type: "spring", stiffness: 200, damping: 10 }}
+                      className="w-24 h-24 bg-gradient-to-r from-green-400 via-green-500 to-green-600 rounded-full flex items-center justify-center mx-auto mb-6 shadow-lg"
                     >
-                      <svg className="w-10 h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <svg className="w-12 h-12 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
                       </svg>
                     </motion.div>
-                    <h4 className="text-2xl font-bold text-[#1B1B1B] mb-3">Order Placed!</h4>
-                    <p className="text-gray-600 text-lg">Your order has been submitted and is pending approval.</p>
+                    
+                    <motion.h4 
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: 0.4 }}
+                      className="text-3xl font-bold bg-gradient-to-r from-green-600 to-green-700 bg-clip-text text-transparent mb-4"
+                    >
+                      Order Placed Successfully! 🎉
+                    </motion.h4>
+                    
+                    <motion.div
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: 0.6 }}
+                      className="bg-gradient-to-r from-green-50 to-emerald-50 rounded-xl p-6 mb-6 border border-green-200"
+                    >
+                      <p className="text-green-800 text-lg mb-4 font-medium">
+                        Thank you for your order! We've received your request and will process it shortly.
+                      </p>
+                      
+                      <div className="space-y-2 text-sm text-green-700">
+                        <div className="flex items-center justify-center space-x-2">
+                          <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                          <span>Order confirmation sent to your email</span>
+                        </div>
+                        <div className="flex items-center justify-center space-x-2">
+                          <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                          <span>We'll contact you within 24 hours</span>
+                        </div>
+                        <div className="flex items-center justify-center space-x-2">
+                          <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                          <span>Payment on delivery (Cash on Delivery)</span>
+                        </div>
+                      </div>
+                    </motion.div>
+                    
+                    <motion.p
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      transition={{ delay: 0.8 }}
+                      className="text-gray-600 text-base"
+                    >
+                      Order Status: <span className="font-semibold text-yellow-600">Pending Approval</span>
+                    </motion.p>
                   </motion.div>
                 ) : (
                   <form onSubmit={handleOrderSubmit} className="space-y-6">
+                    {/* Form Progress Indicator */}
+                    <motion.div
+                      initial={{ opacity: 0, y: -10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl p-4 border border-blue-200"
+                    >
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="text-sm font-medium text-blue-800">Form Completion</span>
+                        <span className="text-sm text-blue-600">
+                          {(() => {
+                            const fields = ['customer_name', 'address', 'phone']
+                            const completed = fields.filter(field => 
+                              orderForm[field as keyof OrderFormData] && 
+                              typeof orderForm[field as keyof OrderFormData] === 'string' && 
+                              (orderForm[field as keyof OrderFormData] as string).trim().length > 0 &&
+                              !formErrors[field as keyof FormErrors]
+                            ).length
+                            return `${completed}/3 fields completed`
+                          })()}
+                        </span>
+                      </div>
+                      <div className="w-full bg-blue-200 rounded-full h-2">
+                        <motion.div
+                          initial={{ width: 0 }}
+                          animate={{ 
+                            width: `${(() => {
+                              const fields = ['customer_name', 'address', 'phone']
+                              const completed = fields.filter(field => 
+                                orderForm[field as keyof OrderFormData] && 
+                                typeof orderForm[field as keyof OrderFormData] === 'string' && 
+                                (orderForm[field as keyof OrderFormData] as string).trim().length > 0 &&
+                                !formErrors[field as keyof FormErrors]
+                              ).length
+                              return (completed / 3) * 100
+                            })()}%`
+                          }}
+                          transition={{ duration: 0.3 }}
+                          className="bg-gradient-to-r from-blue-500 to-blue-600 h-2 rounded-full"
+                        />
+                      </div>
+                    </motion.div>
+
+                    {/* Form Validation Summary */}
+                    {Object.keys(formErrors).length > 0 && (
+                      <motion.div
+                        initial={{ opacity: 0, scale: 0.95, y: -10 }}
+                        animate={{ opacity: 1, scale: 1, y: 0 }}
+                        className="bg-gradient-to-r from-yellow-50 to-orange-50 border-l-4 border-yellow-500 rounded-xl p-4 shadow-sm"
+                      >
+                        <div className="flex items-start">
+                          <div className="flex-shrink-0">
+                            <AlertCircle className="w-5 h-5 text-yellow-600 mt-0.5" />
+                          </div>
+                          <div className="ml-3">
+                            <h4 className="text-sm font-semibold text-yellow-800 mb-2">Please fix the following errors:</h4>
+                            <ul className="text-sm text-yellow-700 space-y-1">
+                              {Object.entries(formErrors).map(([field, error]) => (
+                                <li key={field} className="flex items-center space-x-2">
+                                  <div className="w-1.5 h-1.5 bg-yellow-500 rounded-full"></div>
+                                  <span className="capitalize">{field.replace('_', ' ')}: {error}</span>
+                                </li>
+                              ))}
+                            </ul>
+                          </div>
+                        </div>
+                      </motion.div>
+                    )}
                     <motion.div 
                       initial={{ opacity: 0, y: 20 }}
                       animate={{ opacity: 1, y: 0 }}
@@ -568,26 +804,56 @@ export default function ProductsPage() {
                         </div>
                       </div>
                       
-                      {/* Quantity Selector */}
+                      {/* Enhanced Quantity Selector */}
                       <div className="flex items-center justify-between mb-4">
-                        <span className="text-sm font-medium text-[#1B1B1B]">Quantity:</span>
-                        <div className="flex items-center space-x-4">
+                        <div>
+                          <span className="text-sm font-medium text-[#1B1B1B]">Quantity:</span>
+                          <p className="text-xs text-gray-500 mt-1">Max 100 items per order</p>
+                        </div>
+                        <div className="flex items-center space-x-3">
                           <motion.button
                             whileHover={{ scale: 1.1 }}
                             whileTap={{ scale: 0.9 }}
                             type="button"
-                            onClick={() => setOrderForm({ ...orderForm, quantity: Math.max(1, orderForm.quantity - 1) })}
-                            className="w-10 h-10 rounded-full bg-gradient-to-r from-gray-200 to-gray-300 hover:from-gray-300 hover:to-gray-400 flex items-center justify-center transition-all duration-300 shadow-md"
+                            disabled={orderForm.quantity <= 1}
+                            onClick={() => handleFieldChange('quantity', Math.max(1, orderForm.quantity - 1))}
+                            className={`w-10 h-10 rounded-full flex items-center justify-center transition-all duration-300 shadow-md ${
+                              orderForm.quantity <= 1 
+                                ? 'bg-gray-100 text-gray-400 cursor-not-allowed' 
+                                : 'bg-gradient-to-r from-gray-200 to-gray-300 hover:from-gray-300 hover:to-gray-400 text-gray-700'
+                            }`}
                           >
                             <Minus className="w-4 h-4" />
                           </motion.button>
-                          <span className="w-12 text-center font-bold text-lg">{orderForm.quantity}</span>
+                          
+                          <div className="relative">
+                            <input
+                              type="number"
+                              min="1"
+                              max="100"
+                              value={orderForm.quantity}
+                              onChange={(e) => {
+                                const value = parseInt(e.target.value) || 1
+                                handleFieldChange('quantity', Math.min(100, Math.max(1, value)))
+                              }}
+                              className="w-16 text-center font-bold text-lg border border-gray-200 rounded-lg py-2 focus:ring-2 focus:ring-[#1F8D9D] focus:border-transparent"
+                              aria-label="Product quantity"
+                              title="Select quantity (1-100 items)"
+                              placeholder="1"
+                            />
+                          </div>
+                          
                           <motion.button
                             whileHover={{ scale: 1.1 }}
                             whileTap={{ scale: 0.9 }}
                             type="button"
-                            onClick={() => setOrderForm({ ...orderForm, quantity: orderForm.quantity + 1 })}
-                            className="w-10 h-10 rounded-full bg-gradient-to-r from-gray-200 to-gray-300 hover:from-gray-300 hover:to-gray-400 flex items-center justify-center transition-all duration-300 shadow-md"
+                            disabled={orderForm.quantity >= 100}
+                            onClick={() => handleFieldChange('quantity', Math.min(100, orderForm.quantity + 1))}
+                            className={`w-10 h-10 rounded-full flex items-center justify-center transition-all duration-300 shadow-md ${
+                              orderForm.quantity >= 100 
+                                ? 'bg-gray-100 text-gray-400 cursor-not-allowed' 
+                                : 'bg-gradient-to-r from-gray-200 to-gray-300 hover:from-gray-300 hover:to-gray-400 text-gray-700'
+                            }`}
                           >
                             <Plus className="w-4 h-4" />
                           </motion.button>
@@ -609,18 +875,64 @@ export default function ProductsPage() {
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ delay: 0.1 }}
                     >
-                      <label className="block text-sm font-medium text-[#1B1B1B] mb-2">Full Name</label>
+                      <div className="flex justify-between items-center mb-2">
+                        <label className="block text-sm font-medium text-[#1B1B1B]">Full Name</label>
+                        <span className={`text-xs ${
+                          orderForm.customer_name.length > 50 ? 'text-red-500' : 
+                          orderForm.customer_name.length > 40 ? 'text-yellow-500' : 'text-gray-400'
+                        }`}>
+                          {orderForm.customer_name.length}/50
+                        </span>
+                      </div>
                       <div className="relative">
-                        <User className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+                        <User className={`absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 transition-colors duration-300 ${
+                          formErrors.customer_name ? 'text-red-400' : 
+                          orderForm.customer_name.length > 0 ? 'text-[#1F8D9D]' : 'text-gray-400'
+                        }`} />
                         <input
                           type="text"
                           required
+                          maxLength={50}
+                          disabled={orderLoading}
                           value={orderForm.customer_name}
-                          onChange={(e) => setOrderForm({ ...orderForm, customer_name: e.target.value })}
-                          className="w-full pl-12 pr-4 py-4 border border-gray-200 rounded-xl focus:ring-2 focus:ring-[#1F8D9D] focus:border-transparent transition-all duration-300"
-                          placeholder="Enter your full name"
+                          onChange={(e) => handleFieldChange('customer_name', e.target.value)}
+                          onBlur={(e) => {
+                            const error = validateField('customer_name', e.target.value)
+                            if (error) {
+                              setFormErrors(prev => ({ ...prev, customer_name: error }))
+                            }
+                          }}
+                          className={`w-full pl-12 pr-4 py-4 border rounded-xl focus:ring-2 transition-all duration-300 ${
+                            orderLoading 
+                              ? 'bg-gray-100 cursor-not-allowed border-gray-200'
+                              : formErrors.customer_name 
+                              ? 'border-red-300 bg-red-50 focus:ring-red-200' 
+                              : orderForm.customer_name.length > 0
+                              ? 'border-[#1F8D9D] bg-blue-50 focus:ring-[#1F8D9D] focus:border-transparent'
+                              : 'border-gray-200 focus:ring-[#1F8D9D] focus:border-transparent'
+                          }`}
+                          placeholder="Enter your full name (e.g., John Doe)"
                         />
+                        {orderForm.customer_name.length > 0 && !formErrors.customer_name && (
+                          <div className="absolute right-4 top-1/2 transform -translate-y-1/2">
+                            <div className="w-5 h-5 bg-green-500 rounded-full flex items-center justify-center">
+                              <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                              </svg>
+                            </div>
+                          </div>
+                        )}
                       </div>
+                      {formErrors.customer_name && (
+                        <motion.p
+                          initial={{ opacity: 0, y: -10 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          className="mt-2 text-sm text-red-600 flex items-center bg-red-50 p-2 rounded-lg"
+                        >
+                          <AlertCircle className="w-4 h-4 mr-2 flex-shrink-0" />
+                          {formErrors.customer_name}
+                        </motion.p>
+                      )}
                     </motion.div>
 
                     <motion.div
@@ -628,17 +940,85 @@ export default function ProductsPage() {
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ delay: 0.2 }}
                     >
-                      <label className="block text-sm font-medium text-[#1B1B1B] mb-2">Delivery Address</label>
+                      <div className="flex justify-between items-center mb-2">
+                        <label className="block text-sm font-medium text-[#1B1B1B]">Delivery Address</label>
+                        <span className={`text-xs ${
+                          orderForm.address.length > 200 ? 'text-red-500' : 
+                          orderForm.address.length > 180 ? 'text-yellow-500' : 'text-gray-400'
+                        }`}>
+                          {orderForm.address.length}/200
+                        </span>
+                      </div>
                       <div className="relative">
-                        <MapPin className="absolute left-4 top-4 text-gray-400 w-5 h-5" />
+                        <MapPin className={`absolute left-4 top-4 w-5 h-5 z-10 transition-colors duration-300 ${
+                          formErrors.address ? 'text-red-400' : 
+                          orderForm.address.length > 0 ? 'text-[#1F8D9D]' : 'text-gray-400'
+                        }`} />
                         <textarea
                           required
+                          maxLength={200}
+                          disabled={orderLoading}
                           value={orderForm.address}
-                          onChange={(e) => setOrderForm({ ...orderForm, address: e.target.value })}
-                          className="w-full pl-12 pr-4 py-4 border border-gray-200 rounded-xl focus:ring-2 focus:ring-[#1F8D9D] focus:border-transparent transition-all duration-300"
-                          placeholder="Enter your complete address"
+                          onChange={(e) => {
+                            handleFieldChange('address', e.target.value)
+                            // Auto-expand textarea
+                            const target = e.target as HTMLTextAreaElement
+                            target.style.height = 'auto'
+                            target.style.height = Math.max(target.scrollHeight, 80) + 'px'
+                          }}
+                          onBlur={(e) => {
+                            const error = validateField('address', e.target.value)
+                            if (error) {
+                              setFormErrors(prev => ({ ...prev, address: error }))
+                            }
+                          }}
+                          className={`w-full pl-12 pr-4 py-4 border rounded-xl focus:ring-2 transition-all duration-300 resize-none overflow-hidden ${
+                            orderLoading 
+                              ? 'bg-gray-100 cursor-not-allowed border-gray-200'
+                              : formErrors.address 
+                              ? 'border-red-300 bg-red-50 focus:ring-red-200' 
+                              : orderForm.address.length > 0
+                              ? 'border-[#1F8D9D] bg-blue-50 focus:ring-[#1F8D9D] focus:border-transparent'
+                              : 'border-gray-200 focus:ring-[#1F8D9D] focus:border-transparent'
+                          }`}
+                          placeholder="Enter your complete delivery address&#10;Example: House 123, Street 5, Block A&#10;DHA Phase 2, Lahore, Punjab 54000"
                           rows={3}
+                          style={{ 
+                            minHeight: '80px',
+                            lineHeight: '1.5',
+                            wordWrap: 'break-word',
+                            whiteSpace: 'pre-wrap'
+                          }}
                         />
+                        {orderForm.address.length >= 10 && !formErrors.address && (
+                          <div className="absolute right-4 top-4">
+                            <div className="w-5 h-5 bg-green-500 rounded-full flex items-center justify-center">
+                              <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                              </svg>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                      {formErrors.address && (
+                        <motion.p
+                          initial={{ opacity: 0, y: -10 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          className="mt-2 text-sm text-red-600 flex items-start bg-red-50 p-3 rounded-lg"
+                        >
+                          <AlertCircle className="w-4 h-4 mr-2 flex-shrink-0 mt-0.5" />
+                          <span>{formErrors.address}</span>
+                        </motion.p>
+                      )}
+                      <div className="mt-2 flex items-start space-x-2">
+                        <div className="w-4 h-4 bg-blue-100 rounded-full flex items-center justify-center mt-0.5">
+                          <svg className="w-2 h-2 text-blue-600" fill="currentColor" viewBox="0 0 20 20">
+                            <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+                          </svg>
+                        </div>
+                        <p className="text-xs text-gray-600 leading-relaxed">
+                          Include house/building number, street name, area, city, and postal code for accurate delivery
+                        </p>
                       </div>
                     </motion.div>
 
@@ -647,50 +1027,151 @@ export default function ProductsPage() {
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ delay: 0.3 }}
                     >
-                      <label className="block text-sm font-medium text-[#1B1B1B] mb-2">Phone Number</label>
+                      <div className="flex justify-between items-center mb-2">
+                        <label className="block text-sm font-medium text-[#1B1B1B]">Phone Number</label>
+                        <span className="text-xs text-gray-400">Pakistani format</span>
+                      </div>
                       <div className="relative">
-                        <Phone className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+                        <Phone className={`absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 transition-colors duration-300 ${
+                          formErrors.phone ? 'text-red-400' : 
+                          orderForm.phone.length > 0 ? 'text-[#1F8D9D]' : 'text-gray-400'
+                        }`} />
                         <input
                           type="tel"
                           required
+                          disabled={orderLoading}
                           value={orderForm.phone}
-                          onChange={(e) => setOrderForm({ ...orderForm, phone: e.target.value })}
-                          className="w-full pl-12 pr-4 py-4 border border-gray-200 rounded-xl focus:ring-2 focus:ring-[#1F8D9D] focus:border-transparent transition-all duration-300"
-                          placeholder="Enter your phone number"
+                          onChange={(e) => {
+                            // Format phone number as user types
+                            let value = e.target.value.replace(/\D/g, '')
+                            if (value.startsWith('92')) {
+                              value = '+' + value
+                            } else if (value.startsWith('0')) {
+                              value = value
+                            } else if (value.length > 0 && !value.startsWith('0') && !value.startsWith('+92')) {
+                              value = '0' + value
+                            }
+                            handleFieldChange('phone', value)
+                          }}
+                          onBlur={(e) => {
+                            const error = validateField('phone', e.target.value)
+                            if (error) {
+                              setFormErrors(prev => ({ ...prev, phone: error }))
+                            }
+                          }}
+                          className={`w-full pl-12 pr-4 py-4 border rounded-xl focus:ring-2 transition-all duration-300 ${
+                            orderLoading 
+                              ? 'bg-gray-100 cursor-not-allowed border-gray-200'
+                              : formErrors.phone 
+                              ? 'border-red-300 bg-red-50 focus:ring-red-200' 
+                              : orderForm.phone.length > 0
+                              ? 'border-[#1F8D9D] bg-blue-50 focus:ring-[#1F8D9D] focus:border-transparent'
+                              : 'border-gray-200 focus:ring-[#1F8D9D] focus:border-transparent'
+                          }`}
+                          placeholder="03XX-XXXXXXX or +92-3XX-XXXXXXX"
                         />
+                        {orderForm.phone.length >= 10 && !formErrors.phone && (
+                          <div className="absolute right-4 top-1/2 transform -translate-y-1/2">
+                            <div className="w-5 h-5 bg-green-500 rounded-full flex items-center justify-center">
+                              <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                              </svg>
+                            </div>
+                          </div>
+                        )}
                       </div>
+                      {formErrors.phone && (
+                        <motion.p
+                          initial={{ opacity: 0, y: -10 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          className="mt-2 text-sm text-red-600 flex items-center bg-red-50 p-2 rounded-lg"
+                        >
+                          <AlertCircle className="w-4 h-4 mr-2 flex-shrink-0" />
+                          {formErrors.phone}
+                        </motion.p>
+                      )}
+                      <p className="mt-1 text-xs text-gray-500">
+                        Enter your mobile number for order updates and delivery coordination
+                      </p>
                     </motion.div>
 
                     {orderError && (
                       <motion.div
-                        initial={{ opacity: 0, scale: 0.95 }}
-                        animate={{ opacity: 1, scale: 1 }}
-                        className="bg-red-50 border border-red-200 rounded-xl p-4"
+                        initial={{ opacity: 0, scale: 0.95, y: -10 }}
+                        animate={{ opacity: 1, scale: 1, y: 0 }}
+                        className="bg-gradient-to-r from-red-50 to-red-100 border-l-4 border-red-500 rounded-xl p-4 shadow-sm"
                       >
-                        <div className="flex items-center">
-                          <AlertCircle className="w-5 h-5 text-red-600 mr-3" />
-                          <p className="text-red-700 text-sm font-medium">{orderError}</p>
+                        <div className="flex items-start">
+                          <div className="flex-shrink-0">
+                            <AlertCircle className="w-5 h-5 text-red-600 mt-0.5" />
+                          </div>
+                          <div className="ml-3">
+                            <h4 className="text-sm font-semibold text-red-800 mb-1">Order Submission Error</h4>
+                            <p className="text-sm text-red-700">{orderError}</p>
+                          </div>
                         </div>
                       </motion.div>
                     )}
 
-                    <motion.button
+                    {/* Form Summary */}
+                    <motion.div
                       initial={{ opacity: 0, y: 20 }}
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ delay: 0.4 }}
-                      whileHover={{ scale: 1.02 }}
-                      whileTap={{ scale: 0.98 }}
+                      className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl p-4 border border-blue-200"
+                    >
+                      <h4 className="text-sm font-semibold text-blue-800 mb-2">Order Summary</h4>
+                      <div className="space-y-1 text-sm text-blue-700">
+                        <div className="flex justify-between">
+                          <span>Product:</span>
+                          <span className="font-medium">{selectedProduct.name}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span>Quantity:</span>
+                          <span className="font-medium">{orderForm.quantity} item(s)</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span>Payment:</span>
+                          <span className="font-medium">Cash on Delivery</span>
+                        </div>
+                        <div className="flex justify-between border-t border-blue-200 pt-2 mt-2">
+                          <span className="font-semibold">Total Amount:</span>
+                          <span className="font-bold text-lg">
+                            PKR {((selectedProduct.is_on_sale && selectedProduct.sale_price ? selectedProduct.sale_price : selectedProduct.price) * orderForm.quantity).toFixed(0)}
+                          </span>
+                        </div>
+                      </div>
+                    </motion.div>
+
+                    <motion.button
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: 0.5 }}
+                      whileHover={{ scale: orderLoading ? 1 : 1.02 }}
+                      whileTap={{ scale: orderLoading ? 1 : 0.98 }}
                       type="submit"
-                      disabled={orderLoading}
-                      className="w-full py-4 bg-gradient-to-r from-[#1F8D9D] to-[#186F7B] hover:from-[#186F7B] hover:to-[#1F8D9D] text-white rounded-xl transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg hover:shadow-xl font-medium text-lg"
+                      disabled={orderLoading || Object.keys(formErrors).length > 0}
+                      className={`w-full py-4 rounded-xl transition-all duration-300 shadow-lg font-medium text-lg ${
+                        orderLoading || Object.keys(formErrors).length > 0
+                          ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                          : 'bg-gradient-to-r from-[#1F8D9D] to-[#186F7B] hover:from-[#186F7B] hover:to-[#1F8D9D] text-white hover:shadow-xl'
+                      }`}
                     >
                       {orderLoading ? (
-                        <div className="flex items-center justify-center space-x-2">
+                        <div className="flex items-center justify-center space-x-3">
                           <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                          <span>Placing Order...</span>
+                          <span>Processing Your Order...</span>
+                        </div>
+                      ) : Object.keys(formErrors).length > 0 ? (
+                        <div className="flex items-center justify-center space-x-2">
+                          <AlertCircle className="w-5 h-5" />
+                          <span>Please Fix Errors Above</span>
                         </div>
                       ) : (
-                        "Place Order (Cash on Delivery)"
+                        <div className="flex items-center justify-center space-x-2">
+                          <ShoppingCart className="w-5 h-5" />
+                          <span>Place Order (Cash on Delivery)</span>
+                        </div>
                       )}
                     </motion.button>
                     

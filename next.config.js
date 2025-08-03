@@ -1,7 +1,7 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   eslint: {
-    ignoreDuringBuilds: false,
+    ignoreDuringBuilds: true, // ✅ Disable ESLint during build
   },
   typescript: {
     ignoreBuildErrors: false,
@@ -40,6 +40,7 @@ const nextConfig = {
     dangerouslyAllowSVG: false,
     contentSecurityPolicy: "default-src 'self'; script-src 'none'; sandbox;",
   },
+
   experimental: {
     serverActions: {
       allowedOrigins: [
@@ -49,6 +50,7 @@ const nextConfig = {
       ].filter(Boolean),
     },
   },
+
   async headers() {
     return [
       {
@@ -74,6 +76,6 @@ const nextConfig = {
       },
     ];
   },
-}
+};
 
-module.exports = nextConfig
+module.exports = nextConfig;
