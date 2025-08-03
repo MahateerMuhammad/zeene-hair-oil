@@ -52,7 +52,13 @@ export async function middleware(req: NextRequest) {
   response.headers.set('X-XSS-Protection', '1; mode=block')
   response.headers.set('Referrer-Policy', 'strict-origin-when-cross-origin')
   
-  // Improved Content Security Policy
+  // Generate nonce for inline scripts
+  const generateNonce = () => {
+    return Buffer.from(Math.random().toString()).toString('base64').substring(0, 16)
+  }
+
+  // Improved Content Security Policy with better security
+  const nonce = generateNonce()
   const csp = [
     "default-src 'self'",
     "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.jsdelivr.net https://vercel.live",
@@ -65,6 +71,7 @@ export async function middleware(req: NextRequest) {
     "base-uri 'self'",
     "form-action 'self'",
     "frame-ancestors 'none'",
+    "block-all-mixed-content",
     "upgrade-insecure-requests"
   ].join('; ')
   

@@ -8,6 +8,9 @@ import { supabase } from "@/lib/supabase"
 import { useAuth } from "@/contexts/auth-context"
 import { ShoppingCart, X, Phone, MapPin, User, Plus, Minus, ArrowLeft, Star, Shield, Leaf, Heart, AlertCircle, LogIn } from "lucide-react"
 import Image from "next/image"
+import ProductImage from "@/components/ui/product-image"
+import ErrorBoundary from "@/components/ui/error-boundary"
+import Loading from "@/components/ui/loading"
 import Link from "next/link"
 import { motion } from "framer-motion"
 import { sanitizeInput, validateEmail, validatePhone, validateName, validateAddress, validateQuantity, checkRateLimit } from "@/lib/security"
@@ -184,9 +187,7 @@ export default function ProductDetailPage() {
     return (
       <div className="min-h-screen bg-[#F9F9F9]">
         <Navigation />
-        <div className="flex items-center justify-center py-20">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#1F8D9D]"></div>
-        </div>
+        <Loading size="lg" text="Loading product details..." fullScreen={false} />
       </div>
     )
   }
@@ -234,8 +235,9 @@ export default function ProductDetailPage() {
   ]
 
   return (
-    <div className="min-h-screen bg-[#F9F9F9]">
-      <Navigation />
+    <ErrorBoundary>
+      <div className="min-h-screen bg-[#F9F9F9]">
+        <Navigation />
 
       <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Back Button */}
@@ -264,12 +266,13 @@ export default function ProductDetailPage() {
               </div>
             )}
             <div className="aspect-square overflow-hidden rounded-2xl bg-white shadow-2xl">
-              <Image
-                src={product.image_url || "/oil.png"}
+              <ProductImage
+                src={product.image_url}
                 alt={product.name}
                 width={500}
                 height={500}
                 className="w-full h-full object-cover hover:scale-105 transition-transform duration-300"
+                priority={true}
               />
             </div>
             
@@ -465,7 +468,12 @@ export default function ProductDetailPage() {
           >
             <div className="flex items-center justify-between mb-6">
               <h3 className="text-2xl font-semibold text-[#1B1B1B]">Order {product.name}</h3>
-              <button onClick={() => setShowOrderModal(false)} className="text-gray-400 hover:text-gray-600">
+              <button
+                onClick={() => setShowOrderModal(false)}
+                className="text-gray-400 hover:text-gray-600"
+                title="Close order modal"
+                aria-label="Close order modal"
+              >
                 <X className="w-6 h-6" />
               </button>
             </div>
@@ -618,6 +626,7 @@ export default function ProductDetailPage() {
           </motion.div>
         </motion.div>
       )}
-    </div>
+      </div>
+    </ErrorBoundary>
   )
 }

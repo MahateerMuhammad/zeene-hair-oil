@@ -11,6 +11,9 @@ import { ScrollArea } from "@/components/ui/scroll-area"
 import { validateProduct, validateImageFile, sanitizeInput } from "@/lib/validation"
 import { sanitizeInput as securitySanitize, validateName, validatePrice, checkRateLimit } from "@/lib/security"
 import { logger } from "@/lib/logger"
+import ProductImage from "@/components/ui/product-image"
+import ErrorBoundary from "@/components/ui/error-boundary"
+import Loading from "@/components/ui/loading"
 import { Package, Users, ShoppingCart, Plus, Edit, Trash2, Check, X, AlertCircle } from "lucide-react"
 
 interface Product {
@@ -44,6 +47,8 @@ export default function AdminDashboard() {
   const [products, setProducts] = useState<Product[]>([])
   const [loading, setLoading] = useState(true)
   const [showProductModal, setShowProductModal] = useState(false)
+  const [showDeleteModal, setShowDeleteModal] = useState(false)
+  const [productToDelete, setProductToDelete] = useState<Product | null>(null)
   const [editingProduct, setEditingProduct] = useState<Product | null>(null)
   const [productForm, setProductForm] = useState({
     name: "",
@@ -58,6 +63,7 @@ export default function AdminDashboard() {
   const [uploadingImages, setUploadingImages] = useState(false)
   const [validationErrors, setValidationErrors] = useState<Array<{field: string, message: string}>>([])
   const [submitError, setSubmitError] = useState<string>("")
+  const [deleting, setDeleting] = useState(false)
 
   const { user, userRole } = useAuth()
   const router = useRouter()
@@ -313,29 +319,29 @@ export default function AdminDashboard() {
     }
   }
 
-  const deleteProduct = async (productId: string) => {
-    // Find the product to get its details
-    const product = products.find(p => p.id === productId)
-    if (!product) {
-      setSubmitError('Product not found.')
-      return
-    }
+  const openDeleteModal = (product: Product) => {
+    setProductToDelete(product)
+    setShowDeleteModal(true)
+  }
 
-    // Show confirmation dialog with product name
-    const confirmed = window.confirm(
-      `Are you sure you want to delete "${product.name}"?\n\nThis action cannot be undone and will:\n• Remove the product from your store\n• Delete the product image\n• Cancel any pending orders for this product`
-    )
-    
-    if (!confirmed) return
+  const closeDeleteModal = () => {
+    setProductToDelete(null)
+    setShowDeleteModal(false)
+    setDeleting(false)
+  }
+
+  const confirmDeleteProduct = async () => {
+    if (!productToDelete) return
 
     try {
+      setDeleting(true)
       setSubmitError("") // Clear any previous errors
       
       // First, delete the product image from storage if it exists
-      if (product.image_url && product.image_url.includes('product-images')) {
+      if (productToDelete.image_url && productToDelete.image_url.includes('product-images')) {
         try {
           // Extract the file path from the URL
-          const urlParts = product.image_url.split('/product-images/')
+          const urlParts = productToDelete.image_url.split('/product-images/')
           if (urlParts.length > 1) {
             const filePath = `products/${urlParts[1]}`
             await supabase.storage
@@ -349,18 +355,20 @@ export default function AdminDashboard() {
       }
 
       // Delete the product from database
-      const { error } = await supabase.from("products").delete().eq("id", productId)
+      const { error } = await supabase.from("products").delete().eq("id", productToDelete.id)
 
       if (error) throw error
 
       // Show success message
-      setSubmitError(`Product "${product.name}" has been successfully deleted.`)
+      setSubmitError(`Product "${productToDelete.name}" has been successfully deleted.`)
       setTimeout(() => setSubmitError(""), 3000) // Clear success message after 3 seconds
       
+      closeDeleteModal()
       fetchProducts()
     } catch (error) {
       logger.databaseError('Failed to delete product', 'DELETE', 'products', error as Error)
-      setSubmitError(`Failed to delete "${product.name}". Please try again.`)
+      setSubmitError(`Failed to delete "${productToDelete.name}". Please try again.`)
+      setDeleting(false)
     }
   }
 
@@ -406,9 +414,7 @@ export default function AdminDashboard() {
     return (
       <div className="min-h-screen bg-[#F9F9F9]">
         <Navigation />
-        <div className="flex items-center justify-center py-20">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#1F8D9D]"></div>
-        </div>
+        <Loading size="lg" text="Loading admin dashboard..." fullScreen={false} />
       </div>
     )
   }
@@ -426,8 +432,9 @@ export default function AdminDashboard() {
   }
 
   return (
-    <div className="min-h-screen bg-[#F9F9F9]">
-      <Navigation />
+    <ErrorBoundary>
+      <div className="min-h-screen bg-[#F9F9F9]">
+        <Navigation />
 
       <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="mb-8">
@@ -582,14 +589,12 @@ export default function AdminDashboard() {
                   <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
                     {products.map((product) => (
                       <div key={product.id} className="border border-gray-200 rounded-lg overflow-hidden">
-                        <img
-                          src={product.image_url || "/oil.png"}
+                        <ProductImage
+                          src={product.image_url}
                           alt={product.name}
                           className="w-full h-48 object-cover"
-                          onError={(e) => {
-                            const target = e.target as HTMLImageElement;
-                            target.src = "/oil.png";
-                          }}
+                          width={300}
+                          height={192}
                         />
                         <div className="p-4">
                           <div className="flex items-center justify-between mb-2">
@@ -626,7 +631,7 @@ export default function AdminDashboard() {
                               <span>Edit</span>
                             </button>
                             <button
-                              onClick={() => deleteProduct(product.id)}
+                              onClick={() => openDeleteModal(product)}
                               className="flex items-center space-x-1 bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded text-sm transition-colors"
                             >
                               <Trash2 className="w-4 h-4" />
@@ -896,6 +901,86 @@ export default function AdminDashboard() {
           </div>
         </div>
       )}
-    </div>
+
+      {/* Delete Confirmation Modal */}
+      {showDeleteModal && productToDelete && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-white/20">
+            <div className="flex items-center justify-between mb-6">
+              <div className="flex items-center space-x-3">
+                <div className="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center">
+                  <AlertCircle className="w-6 h-6 text-red-600" />
+                </div>
+                <div>
+                  <h3 className="text-xl font-bold text-gray-900">Delete Product</h3>
+                  <p className="text-sm text-gray-500">This action cannot be undone</p>
+                </div>
+              </div>
+              <button
+                onClick={closeDeleteModal}
+                className="text-gray-400 hover:text-gray-600 transition-colors"
+                disabled={deleting}
+                aria-label="Close delete confirmation modal"
+                title="Close"
+              >
+                <X className="w-6 h-6" />
+              </button>
+            </div>
+
+            <div className="mb-6">
+              <p className="text-gray-700 mb-4">
+                Are you sure you want to delete <span className="font-semibold text-gray-900">"{productToDelete.name}"</span>?
+              </p>
+              
+              <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+                <p className="text-red-800 text-sm font-medium mb-2">This action will:</p>
+                <ul className="text-red-700 text-sm space-y-1">
+                  <li className="flex items-center space-x-2">
+                    <div className="w-1.5 h-1.5 bg-red-500 rounded-full"></div>
+                    <span>Remove the product from your store</span>
+                  </li>
+                  <li className="flex items-center space-x-2">
+                    <div className="w-1.5 h-1.5 bg-red-500 rounded-full"></div>
+                    <span>Delete the product image</span>
+                  </li>
+                  <li className="flex items-center space-x-2">
+                    <div className="w-1.5 h-1.5 bg-red-500 rounded-full"></div>
+                    <span>Cancel any pending orders for this product</span>
+                  </li>
+                </ul>
+              </div>
+            </div>
+
+            <div className="flex space-x-3">
+              <button
+                onClick={closeDeleteModal}
+                disabled={deleting}
+                className="flex-1 px-4 py-3 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl font-medium transition-colors disabled:opacity-50"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={confirmDeleteProduct}
+                disabled={deleting}
+                className="flex-1 px-4 py-3 bg-red-500 hover:bg-red-600 text-white rounded-xl font-medium transition-colors disabled:opacity-50 flex items-center justify-center space-x-2"
+              >
+                {deleting ? (
+                  <>
+                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                    <span>Deleting...</span>
+                  </>
+                ) : (
+                  <>
+                    <Trash2 className="w-4 h-4" />
+                    <span>Delete Product</span>
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+      </div>
+    </ErrorBoundary>
   )
 }

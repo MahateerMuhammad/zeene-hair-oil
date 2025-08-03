@@ -5,6 +5,7 @@ import Link from "next/link"
 import { supabase } from "@/lib/supabase"
 import { ShoppingCart } from "lucide-react"
 import { motion } from "framer-motion"
+import ProductImage from "@/components/ui/product-image"
 
 interface Product {
   id: string
@@ -112,17 +113,19 @@ export default function FeaturedProducts() {
                 </div>
               )}
               <div className="aspect-square overflow-hidden">
-                <motion.img
-                  src={product.image_url || "/oil.png"}
-                  alt={product.name}
-                  className="w-full h-full object-cover"
+                <motion.div
                   whileHover={{ scale: 1.1 }}
                   transition={{ duration: 0.3 }}
-                  onError={(e) => {
-                    const target = e.target as HTMLImageElement;
-                    target.src = "/oil.png";
-                  }}
-                />
+                  className="w-full h-full"
+                >
+                  <ProductImage
+                    src={product.image_url}
+                    alt={product.name}
+                    className="w-full h-full object-cover"
+                    width={400}
+                    height={400}
+                  />
+                </motion.div>
               </div>
 
               <div className="p-6">

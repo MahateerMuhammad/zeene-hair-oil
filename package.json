@@ -5,8 +5,12 @@
   "scripts": {
     "build": "next build",
     "dev": "next dev",
+    "dev:turbo": "next dev --turbo",
+    "dev:optimize": "node scripts/dev-optimize.js",
     "lint": "next lint",
-    "start": "next start"
+    "start": "next start",
+    "clean": "rm -rf .next && rm -rf node_modules/.cache",
+    "analyze": "ANALYZE=true npm run build"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.9.1",

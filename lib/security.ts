@@ -4,22 +4,28 @@ export function sanitizeInput(input: string): string {
   if (typeof input !== 'string') return ''
   
   return input
-    // Remove script tags
+    // Remove script tags (more comprehensive)
     .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '')
-    // Remove javascript: protocol
+    .replace(/<\/script>/gi, '')
+    // Remove dangerous protocols
     .replace(/javascript:/gi, '')
-    // Remove data: protocol (potential XSS)
     .replace(/data:/gi, '')
-    // Remove vbscript: protocol
     .replace(/vbscript:/gi, '')
-    // Remove event handlers
+    .replace(/file:/gi, '')
+    .replace(/about:/gi, '')
+    // Remove event handlers (more comprehensive)
     .replace(/on\w+\s*=/gi, '')
-    // Remove HTML tags (basic)
+    .replace(/on\w+\s*\(/gi, '')
+    // Remove HTML tags and attributes
     .replace(/<[^>]*>/g, '')
-    // Remove null bytes
+    .replace(/&lt;[^&gt;]*&gt;/g, '')
+    // Remove dangerous characters
+    .replace(/[<>'"&]/g, '')
+    // Remove null bytes and control characters
     .replace(/\0/g, '')
-    // Remove control characters except newlines and tabs
     .replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, '')
+    // Remove potential SQL injection patterns
+    .replace(/(\b(SELECT|INSERT|UPDATE|DELETE|DROP|CREATE|ALTER|EXEC|UNION|SCRIPT)\b)/gi, '')
     // Trim whitespace
     .trim()
     // Limit length
@@ -27,8 +33,31 @@ export function sanitizeInput(input: string): string {
 }
 
 export function validateEmail(email: string): boolean {
-  const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/
-  return emailRegex.test(email) && email.length <= 254
+  try {
+    if (typeof email !== 'string' || !email.trim()) return false
+    
+    // More comprehensive email validation
+    const emailRegex = /^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$/
+    
+    // Check length constraints
+    if (email.length > 254) return false
+    
+    // Check for dangerous patterns
+    if (/[<>'"&]/.test(email)) return false
+    
+    // Split and validate parts
+    const parts = email.split('@')
+    if (parts.length !== 2) return false
+    
+    const [localPart, domainPart] = parts
+    if (localPart.length > 64 || localPart.length === 0) return false
+    if (domainPart.length > 253 || domainPart.length === 0) return false
+    
+    return emailRegex.test(email)
+  } catch (error) {
+    console.error('Email validation error:', error)
+    return false
+  }
 }
 
 export function validatePhone(phone: string): boolean {

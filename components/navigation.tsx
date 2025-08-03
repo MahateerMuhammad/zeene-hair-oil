@@ -1,20 +1,69 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useCallback, useMemo, memo } from "react"
 import Link from "next/link"
 import Image from "next/image"
 import { useAuth } from "@/contexts/auth-context"
 import { Menu, X, LogOut } from "lucide-react"
 import { motion, AnimatePresence } from "framer-motion"
 
-export default function Navigation() {
+// Memoized navigation item component for better performance
+const NavigationItem = memo(({ href, children, onClick }: { 
+  href: string; 
+  children: React.ReactNode; 
+  onClick?: () => void 
+}) => (
+  <Link 
+    href={href} 
+    className="text-[#1B1B1B] hover:text-[#1F8D9D] transition-colors"
+    onClick={onClick}
+  >
+    {children}
+  </Link>
+))
+
+NavigationItem.displayName = 'NavigationItem'
+
+function Navigation() {
   const [isOpen, setIsOpen] = useState(false)
   const { user, userRole, signOut } = useAuth()
 
-  const handleSignOut = async () => {
-    await signOut()
+  const handleSignOut = useCallback(async () => {
+    try {
+      await signOut()
+      setIsOpen(false)
+    } catch (error) {
+      console.error('Sign out error:', error)
+    }
+  }, [signOut])
+
+  const toggleMenu = useCallback(() => {
+    setIsOpen(prev => !prev)
+  }, [])
+
+  const closeMenu = useCallback(() => {
     setIsOpen(false)
-  }
+  }, [])
+
+  // Memoize navigation items to prevent unnecessary re-renders
+  const navigationItems = useMemo(() => [
+    { href: "/", label: "Home" },
+    { href: "/products", label: "Products" },
+    { href: "/contact", label: "Contact" }
+  ], [])
+
+  const authItems = useMemo(() => {
+    if (user) {
+      return [
+        ...(userRole === "admin" ? [{ href: "/admin", label: "Admin" }] : []),
+        { action: handleSignOut, label: "Sign Out", icon: LogOut }
+      ]
+    }
+    return [
+      { href: "/login", label: "Login" },
+      { href: "/signup", label: "Sign Up", primary: true }
+    ]
+  }, [user, userRole, handleSignOut])
 
   return (
     <motion.nav 
@@ -37,120 +86,91 @@ export default function Navigation() {
 
           {/* Desktop Navigation */}
           <div className="hidden md:flex items-center space-x-8">
-            <Link href="/" className="text-[#1B1B1B] hover:text-[#1F8D9D] transition-colors">
-              Home
-            </Link>
-            <Link href="/products" className="text-[#1B1B1B] hover:text-[#1F8D9D] transition-colors">
-              Products
-            </Link>
-            <Link href="/contact" className="text-[#1B1B1B] hover:text-[#1F8D9D] transition-colors">
-              Contact
-            </Link>
+            {navigationItems.map((item) => (
+              <NavigationItem key={item.href} href={item.href}>
+                {item.label}
+              </NavigationItem>
+            ))}
 
-            {user ? (
-              <div className="flex items-center space-x-4">
-                {userRole === "admin" && (
-                  <Link href="/admin" className="text-[#1B1B1B] hover:text-[#1F8D9D] transition-colors">
-                    Admin
+            <div className="flex items-center space-x-4">
+              {authItems.map((item, index) => (
+                item.action ? (
+                  <button
+                    key={index}
+                    onClick={item.action}
+                    className="flex items-center space-x-1 text-[#1B1B1B] hover:text-[#1F8D9D] transition-colors"
+                  >
+                    {item.icon && <item.icon size={16} />}
+                    <span>{item.label}</span>
+                  </button>
+                ) : (
+                  <Link
+                    key={item.href}
+                    href={item.href!}
+                    className={item.primary 
+                      ? "bg-[#1F8D9D] hover:bg-[#1F8D9D]/90 text-white px-6 py-3 rounded-lg font-semibold transition-all duration-300 transform hover:scale-105"
+                      : "text-[#1B1B1B] hover:text-[#1F8D9D] transition-colors"
+                    }
+                  >
+                    {item.label}
                   </Link>
-                )}
-                <button
-                  onClick={handleSignOut}
-                  className="flex items-center space-x-1 text-[#1B1B1B] hover:text-[#1F8D9D] transition-colors"
-                >
-                  <LogOut size={16} />
-                  <span>Sign Out</span>
-                </button>
-              </div>
-            ) : (
-              <div className="flex items-center space-x-4">
-                <Link href="/login" className="text-[#1B1B1B] hover:text-[#1F8D9D] transition-colors">
-                  Login
-                </Link>
-                <Link
-                  href="/signup"
-                  className="bg-[#1F8D9D] hover:bg-[#1F8D9D]/90 text-white px-6 py-3 rounded-lg font-semibold transition-all duration-300 transform hover:scale-105"
-                >
-                  Sign Up
-                </Link>
-              </div>
-            )}
+                )
+              ))}
+            </div>
           </div>
 
           {/* Mobile menu button */}
           <div className="md:hidden">
-            <button onClick={() => setIsOpen(!isOpen)} className="text-[#1B1B1B] hover:text-[#1F8D9D]">
+            <button onClick={toggleMenu} className="text-[#1B1B1B] hover:text-[#1F8D9D]">
               {isOpen ? <X size={24} /> : <Menu size={24} />}
             </button>
           </div>
         </div>
 
         {/* Mobile Navigation */}
-        {isOpen && (
-          <div className="md:hidden">
-            <div className="px-2 pt-2 pb-3 space-y-1 sm:px-3 bg-white border-t">
-              <Link
-                href="/"
-                className="block px-3 py-2 text-[#1B1B1B] hover:text-[#1F8D9D] transition-colors"
-                onClick={() => setIsOpen(false)}
-              >
-                Home
-              </Link>
-              <Link
-                href="/products"
-                className="block px-3 py-2 text-[#1B1B1B] hover:text-[#1F8D9D] transition-colors"
-                onClick={() => setIsOpen(false)}
-              >
-                Products
-              </Link>
-              <Link
-                href="/contact"
-                className="block px-3 py-2 text-[#1B1B1B] hover:text-[#1F8D9D] transition-colors"
-                onClick={() => setIsOpen(false)}
-              >
-                Contact
-              </Link>
+        <AnimatePresence>
+          {isOpen && (
+            <motion.div
+              className="md:hidden"
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: "auto" }}
+              exit={{ opacity: 0, height: 0 }}
+              transition={{ duration: 0.2 }}
+            >
+              <div className="px-2 pt-2 pb-3 space-y-1 sm:px-3 bg-white border-t">
+                {navigationItems.map((item) => (
+                  <NavigationItem key={item.href} href={item.href} onClick={closeMenu}>
+                    <span className="block px-3 py-2">{item.label}</span>
+                  </NavigationItem>
+                ))}
 
-              {user ? (
-                <>
-                  {userRole === "admin" && (
-                    <Link
-                      href="/admin"
-                      className="block px-3 py-2 text-[#1B1B1B] hover:text-[#1F8D9D] transition-colors"
-                      onClick={() => setIsOpen(false)}
+                {authItems.map((item, index) => (
+                  item.action ? (
+                    <button
+                      key={index}
+                      onClick={item.action}
+                      className="block w-full text-left px-3 py-2 text-[#1B1B1B] hover:text-[#1F8D9D] transition-colors"
                     >
-                      Admin
+                      {item.label}
+                    </button>
+                  ) : (
+                    <Link
+                      key={item.href}
+                      href={item.href!}
+                      className="block px-3 py-2 text-[#1B1B1B] hover:text-[#1F8D9D] transition-colors"
+                      onClick={closeMenu}
+                    >
+                      {item.label}
                     </Link>
-                  )}
-                  <button
-                    onClick={handleSignOut}
-                    className="block w-full text-left px-3 py-2 text-[#1B1B1B] hover:text-[#1F8D9D] transition-colors"
-                  >
-                    Sign Out
-                  </button>
-                </>
-              ) : (
-                <>
-                  <Link
-                    href="/login"
-                    className="block px-3 py-2 text-[#1B1B1B] hover:text-[#1F8D9D] transition-colors"
-                    onClick={() => setIsOpen(false)}
-                  >
-                    Login
-                  </Link>
-                  <Link
-                    href="/signup"
-                    className="block px-3 py-2 text-[#1B1B1B] hover:text-[#1F8D9D] transition-colors"
-                    onClick={() => setIsOpen(false)}
-                  >
-                    Sign Up
-                  </Link>
-                </>
-              )}
-            </div>
-          </div>
-        )}
+                  )
+                ))}
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
     </motion.nav>
   )
 }
+
+export default memo(Navigation)
