@@ -3,7 +3,10 @@ import { Resend } from "resend"
 import { sanitizeInput, validateEmail, checkRateLimit } from "../../../lib/security"
 
 // Use the working API key directly
-const resend = new Resend('re_ZZEC9iu7_LDuQgZyoDJfFeQUKbDf6S656')
+import { getValidatedServerEnv } from "../../../lib/env"
+
+const serverEnv = getValidatedServerEnv()
+const resend = new Resend(serverEnv.RESEND_API_KEY)
 
 interface OrderEmailData {
   type: 'new_order' | 'order_approved' | 'order_rejected'

@@ -1,7 +1,9 @@
 import { NextResponse } from "next/server"
 import { Resend } from "resend"
+import { getValidatedServerEnv } from "../../../lib/env"
 
-const resend = new Resend('re_ZZEC9iu7_LDuQgZyoDJfFeQUKbDf6S656')
+const serverEnv = getValidatedServerEnv()
+const resend = new Resend(serverEnv.RESEND_API_KEY)
 
 export async function POST() {
   try {

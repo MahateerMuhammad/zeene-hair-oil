@@ -32,7 +32,7 @@ export function sanitizeSearchQuery(query: string): string {
   
   return query
     // Remove SQL keywords and dangerous characters
-    .replace(/[';\\--]/g, '')
+    .replace(/[';\\-]/g, '')
     .replace(/\b(SELECT|INSERT|UPDATE|DELETE|DROP|CREATE|ALTER|EXEC|UNION|SCRIPT|DECLARE|CAST|CONVERT)\b/gi, '')
     // Remove potential SQL injection patterns
     .replace(/(\b(OR|AND)\s+\d+\s*=\s*\d+)/gi, '')

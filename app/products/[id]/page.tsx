@@ -6,13 +6,13 @@ import { useParams, useRouter } from "next/navigation"
 import Navigation from "@/components/navigation"
 import { supabase } from "@/lib/supabase"
 import { useAuth } from "@/contexts/auth-context"
-import { ShoppingCart, X, Phone, MapPin, User, Plus, Minus, ArrowLeft, Star, Shield, Leaf, Heart, AlertCircle, LogIn } from "lucide-react"
+import { ShoppingCart, X, Phone, MapPin, User, Plus, Minus, ArrowLeft, Star, Shield, Leaf, Heart, AlertCircle, LogIn, Truck, Award, Clock, CheckCircle, Zap, Droplets, Sparkles, Package } from "lucide-react"
 import Image from "next/image"
 import ProductImage from "@/components/ui/product-image"
 import ErrorBoundary from "@/components/ui/error-boundary"
 import Loading from "@/components/ui/loading"
 import Link from "next/link"
-import { motion } from "framer-motion"
+import { motion, AnimatePresence } from "framer-motion"
 import { sanitizeInput, validateEmail, validatePhone, validateName, validateAddress, validateQuantity, checkRateLimit } from "@/lib/security"
 
 interface Product {
@@ -47,6 +47,8 @@ export default function ProductDetailPage() {
   })
   const [orderLoading, setOrderLoading] = useState(false)
   const [orderSuccess, setOrderSuccess] = useState(false)
+  const [imageZoomed, setImageZoomed] = useState(false)
+  const [activeTab, setActiveTab] = useState<'description'>('description')
 
   const { user } = useAuth()
 
@@ -213,25 +215,69 @@ export default function ProductDetailPage() {
 
   const features = [
     {
-      icon: <Leaf className="w-6 h-6 text-[#3E7346]" />,
+      icon: <Leaf className="w-7 h-7 text-[#3E7346]" />,
       title: "100% Natural",
-      description: "Made with pure, natural ingredients",
+      description: "Made with pure, natural ingredients sourced from organic farms",
+      gradient: "from-[#3E7346]/10 to-[#3E7346]/5"
     },
     {
-      icon: <Shield className="w-6 h-6 text-[#1F8D9D]" />,
+      icon: <Shield className="w-7 h-7 text-[#1F8D9D]" />,
       title: "Chemical Free",
-      description: "No harmful chemicals or sulfates",
+      description: "No harmful chemicals, sulfates, or artificial preservatives",
+      gradient: "from-[#1F8D9D]/10 to-[#1F8D9D]/5"
     },
     {
-      icon: <Heart className="w-6 h-6 text-[#FDBA2D]" />,
-      title: "Nourishing",
-      description: "Deep conditioning formula",
+      icon: <Sparkles className="w-7 h-7 text-[#FDBA2D]" />,
+      title: "Deep Nourishing",
+      description: "Penetrates deep into hair follicles for lasting nourishment",
+      gradient: "from-[#FDBA2D]/10 to-[#FDBA2D]/5"
     },
     {
-      icon: <Star className="w-6 h-6 text-[#3E7346]" />,
+      icon: <Award className="w-7 h-7 text-[#8B5CF6]" />,
       title: "Premium Quality",
-      description: "Carefully crafted ingredients",
+      description: "Carefully crafted with the finest ingredients and traditional methods",
+      gradient: "from-[#8B5CF6]/10 to-[#8B5CF6]/5"
     },
+  ]
+
+  const trustBadges = [
+    {
+      icon: <Truck className="w-5 h-5 text-[#1F8D9D]" />,
+      title: "Free Delivery",
+      description: "On orders above PKR 1000"
+    },
+    {
+      icon: <Clock className="w-5 h-5 text-[#3E7346]" />,
+      title: "Fast Shipping",
+      description: "5-7 days"
+    },
+    {
+      icon: <CheckCircle className="w-5 h-5 text-[#FDBA2D]" />,
+      title: "Quality Guarantee",
+      description: "100% satisfaction"
+    },
+    {
+      icon: <Package className="w-5 h-5 text-[#8B5CF6]" />,
+      title: "Secure Packaging",
+      description: "Safe & hygienic"
+    }
+  ]
+
+  const ingredients = [
+    "Coconut Oil - Deep moisturizing and strengthening",
+    "Argan Oil - Rich in vitamins and antioxidants",
+    "Jojoba Oil - Balances scalp oil production",
+    "Rosemary Extract - Stimulates hair growth",
+    "Vitamin E - Protects against damage",
+    "Aloe Vera - Soothes and conditions scalp"
+  ]
+
+  const usageInstructions = [
+    "Apply 2-3 drops to damp or dry hair",
+    "Gently massage into scalp and hair roots",
+    "Leave for 30 minutes or overnight for deep treatment",
+    "Wash with mild shampoo and lukewarm water",
+    "Use 2-3 times per week for best results"
   ]
 
   return (
@@ -252,152 +298,327 @@ export default function ProductDetailPage() {
           <span>Back to Products</span>
         </motion.button>
 
-        <div className="grid lg:grid-cols-2 gap-12 mb-16">
-          {/* Product Image */}
+        <div className="grid lg:grid-cols-2 gap-12 mb-20">
+          {/* Enhanced Product Image Section */}
           <motion.div
             className="relative"
             initial={{ opacity: 0, x: -50 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ duration: 0.6 }}
           >
+            {/* Sale Badge */}
             {product.is_on_sale && product.sale_percentage && (
-              <div className="absolute top-6 left-6 bg-red-500 text-white px-4 py-2 rounded-full text-lg font-bold z-10 shadow-lg">
-                -{product.sale_percentage}% OFF
-              </div>
+              <motion.div
+                className="absolute top-6 left-6 bg-gradient-to-r from-red-500 to-red-600 text-white px-5 py-3 rounded-full text-lg font-bold z-20 shadow-xl"
+                initial={{ scale: 0, rotate: -180 }}
+                animate={{ scale: 1, rotate: 0 }}
+                transition={{ duration: 0.5, delay: 0.3 }}
+                whileHover={{ scale: 1.05 }}
+              >
+                <div className="flex items-center space-x-1">
+                  <Zap className="w-4 h-4" />
+                  <span>-{product.sale_percentage}% OFF</span>
+                </div>
+              </motion.div>
             )}
-            <div className="aspect-square overflow-hidden rounded-2xl bg-white shadow-2xl">
+
+            {/* Main Product Image */}
+            <motion.div
+              className="relative aspect-square overflow-hidden rounded-3xl bg-gradient-to-br from-white to-gray-50 shadow-2xl cursor-pointer group"
+              onClick={() => setImageZoomed(!imageZoomed)}
+              whileHover={{ scale: 1.02 }}
+              transition={{ duration: 0.3 }}
+            >
+              <div className="absolute inset-0 bg-gradient-to-br from-transparent via-transparent to-black/5 z-10"></div>
               <ProductImage
                 src={product.image_url}
                 alt={product.name}
-                width={500}
-                height={500}
-                className="w-full h-full object-cover hover:scale-105 transition-transform duration-300"
+                width={600}
+                height={600}
+                className={`w-full h-full object-cover transition-all duration-500 ${
+                  imageZoomed ? 'scale-150' : 'group-hover:scale-110'
+                }`}
                 priority={true}
               />
+              
+              {/* Zoom Indicator */}
+              <div className="absolute bottom-4 right-4 bg-black/20 backdrop-blur-sm text-white px-3 py-2 rounded-full text-sm opacity-0 group-hover:opacity-100 transition-opacity duration-300 z-20">
+                Click to zoom
+              </div>
+            </motion.div>
+
+            {/* Enhanced Decorative Elements */}
+            <motion.div
+              className="absolute -bottom-6 -right-6 w-32 h-32 bg-gradient-to-br from-[#1F8D9D]/30 to-[#3E7346]/30 rounded-full blur-2xl"
+              animate={{
+                scale: [1, 1.1, 1],
+                opacity: [0.3, 0.5, 0.3]
+              }}
+              transition={{
+                duration: 4,
+                repeat: Infinity,
+                ease: "easeInOut"
+              }}
+            ></motion.div>
+            <motion.div
+              className="absolute -top-6 -left-6 w-40 h-40 bg-gradient-to-br from-[#FDBA2D]/30 to-[#1F8D9D]/30 rounded-full blur-2xl"
+              animate={{
+                scale: [1.1, 1, 1.1],
+                opacity: [0.2, 0.4, 0.2]
+              }}
+              transition={{
+                duration: 5,
+                repeat: Infinity,
+                ease: "easeInOut",
+                delay: 1
+              }}
+            ></motion.div>
+            <motion.div
+              className="absolute top-1/2 -right-8 w-20 h-20 bg-gradient-to-br from-[#8B5CF6]/20 to-[#FDBA2D]/20 rounded-full blur-xl"
+              animate={{
+                y: [-10, 10, -10],
+                opacity: [0.2, 0.4, 0.2]
+              }}
+              transition={{
+                duration: 3,
+                repeat: Infinity,
+                ease: "easeInOut",
+                delay: 2
+              }}
+            ></motion.div>
+
+            {/* Product Quality Indicators */}
+            <div className="absolute bottom-6 left-6 flex space-x-2 z-20">
+              <motion.div
+                className="bg-white/90 backdrop-blur-sm px-3 py-2 rounded-full shadow-lg"
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.8 }}
+              >
+                <div className="flex items-center space-x-2">
+                  <Leaf className="w-4 h-4 text-[#3E7346]" />
+                  <span className="text-sm font-medium text-[#1B1B1B]">Natural</span>
+                </div>
+              </motion.div>
+              <motion.div
+                className="bg-white/90 backdrop-blur-sm px-3 py-2 rounded-full shadow-lg"
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 1 }}
+              >
+                <div className="flex items-center space-x-2">
+                  <Shield className="w-4 h-4 text-[#1F8D9D]" />
+                  <span className="text-sm font-medium text-[#1B1B1B]">Safe</span>
+                </div>
+              </motion.div>
             </div>
-            
-            {/* Decorative elements */}
-            <div className="absolute -bottom-4 -right-4 w-24 h-24 bg-gradient-to-br from-[#1F8D9D]/20 to-[#3E7346]/20 rounded-full blur-xl"></div>
-            <div className="absolute -top-4 -left-4 w-32 h-32 bg-gradient-to-br from-[#FDBA2D]/20 to-[#1F8D9D]/20 rounded-full blur-xl"></div>
           </motion.div>
 
-          {/* Product Details */}
+          {/* Enhanced Product Details */}
           <motion.div
-            className="space-y-6"
+            className="space-y-8"
             initial={{ opacity: 0, x: 50 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ duration: 0.6, delay: 0.2 }}
           >
-            <div>
-              <h1 className="text-4xl md:text-5xl font-playfair font-bold text-[#1B1B1B] mb-4">
+            {/* Product Title and Price */}
+            <div className="space-y-6">
+              <motion.h1
+                className="text-4xl md:text-6xl font-playfair font-bold text-[#1B1B1B] leading-tight"
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.3 }}
+              >
                 {product.name}
-              </h1>
-              <div className="flex items-center space-x-4 mb-6">
-              <div className="flex items-center space-x-3">
-                {product.is_on_sale && product.sale_price ? (
-                  <>
-                    <span className="text-2xl text-gray-500 line-through">PKR {product.price.toFixed(0)}</span>
-                    <span className="text-3xl font-bold text-[#1F8D9D]">PKR {product.sale_price.toFixed(0)}</span>
-                    {product.sale_percentage && (
-                      <span className="bg-red-500 text-white px-3 py-1 rounded-full text-sm font-semibold">
-                        -{product.sale_percentage}% OFF
-                      </span>
-                    )}
-                  </>
-                ) : (
-                  <span className="text-3xl font-bold text-[#1F8D9D]">PKR {product.price.toFixed(0)}</span>
-                )}
-              </div>
-
-            </div>
-            </div>
-
-            <div className="prose prose-gray max-w-none">
-              <div className="bg-gradient-to-r from-[#F9F9F9] to-white p-6 rounded-xl border-l-4 border-[#1F8D9D]">
-                <p className="text-lg text-gray-700 leading-relaxed mb-0">
-                  {product.description || "Experience the power of nature with our premium hair oil. Specially formulated to nourish, strengthen, and transform your hair naturally."}
-                </p>
-              </div>
-            </div>
-
-            {/* Key Benefits */}
-            <div className="grid grid-cols-2 gap-4">
-              <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-100">
-                <div className="flex items-center space-x-3">
-                  <div className="w-10 h-10 bg-[#3E7346]/10 rounded-full flex items-center justify-center">
-                    <Leaf className="w-5 h-5 text-[#3E7346]" />
-                  </div>
-                  <div>
-                    <h4 className="font-semibold text-[#1B1B1B]">Natural</h4>
-                    <p className="text-sm text-gray-600">100% Pure</p>
-                  </div>
-                </div>
-              </div>
-              <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-100">
-                <div className="flex items-center space-x-3">
-                  <div className="w-10 h-10 bg-[#1F8D9D]/10 rounded-full flex items-center justify-center">
-                    <Shield className="w-5 h-5 text-[#1F8D9D]" />
-                  </div>
-                  <div>
-                    <h4 className="font-semibold text-[#1B1B1B]">Safe</h4>
-                    <p className="text-sm text-gray-600">Chemical Free</p>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Quantity Selector */}
-            <div className="bg-gradient-to-br from-white to-[#F9F9F9] p-6 rounded-xl shadow-lg border border-gray-100">
-              <div className="flex items-center justify-between mb-6">
-                <span className="text-lg font-semibold text-[#1B1B1B]">Select Quantity:</span>
-                <div className="flex items-center space-x-4">
-                  <motion.button
-                    onClick={() => setOrderForm({ ...orderForm, quantity: Math.max(1, orderForm.quantity - 1) })}
-                    className="w-12 h-12 rounded-full bg-gradient-to-r from-gray-200 to-gray-300 hover:from-gray-300 hover:to-gray-400 flex items-center justify-center transition-all duration-200 shadow-md"
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.95 }}
-                  >
-                    <Minus className="w-5 h-5 text-gray-700" />
-                  </motion.button>
-                  <div className="w-16 h-12 bg-[#1F8D9D] text-white rounded-lg flex items-center justify-center">
-                    <span className="font-bold text-xl">{orderForm.quantity}</span>
-                  </div>
-                  <motion.button
-                    onClick={() => setOrderForm({ ...orderForm, quantity: orderForm.quantity + 1 })}
-                    className="w-12 h-12 rounded-full bg-gradient-to-r from-gray-200 to-gray-300 hover:from-gray-300 hover:to-gray-400 flex items-center justify-center transition-all duration-200 shadow-md"
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.95 }}
-                  >
-                    <Plus className="w-5 h-5 text-gray-700" />
-                  </motion.button>
-                </div>
-              </div>
+              </motion.h1>
               
-              <div className="bg-white p-4 rounded-lg border-2 border-dashed border-[#1F8D9D]/30">
-                <div className="flex items-center justify-between">
-                  <span className="text-lg font-semibold text-gray-700">Total Amount:</span>
-                  <div className="text-right">
-                    {product.is_on_sale && product.sale_price ? (
-                      <>
-                        <div className="text-sm text-gray-500 line-through">
-                          PKR {(product.price * orderForm.quantity).toFixed(0)}
-                        </div>
-                        <div className="text-2xl font-bold text-[#1F8D9D]">
-                          PKR {(product.sale_price * orderForm.quantity).toFixed(0)}
-                        </div>
-                        <div className="text-sm text-green-600 font-medium">
-                          You save PKR {((product.price - product.sale_price) * orderForm.quantity).toFixed(0)}
-                        </div>
-                      </>
-                    ) : (
-                      <span className="text-2xl font-bold text-[#1F8D9D]">
-                        PKR {(product.price * orderForm.quantity).toFixed(0)}
-                      </span>
+              <motion.div
+                className="flex flex-wrap items-center gap-4"
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.4 }}
+              >
+                {product.is_on_sale && product.sale_price ? (
+                  <div className="flex items-center space-x-4">
+                    <span className="text-2xl text-gray-500 line-through font-medium">
+                      PKR {product.price.toFixed(0)}
+                    </span>
+                    <span className="text-4xl font-bold text-[#1F8D9D]">
+                      PKR {product.sale_price.toFixed(0)}
+                    </span>
+                    {product.sale_percentage && (
+                      <div className="bg-gradient-to-r from-red-500 to-red-600 text-white px-4 py-2 rounded-full text-sm font-bold shadow-lg">
+                        SAVE {product.sale_percentage}%
+                      </div>
                     )}
                   </div>
-                </div>
-              </div>
+                ) : (
+                  <span className="text-4xl font-bold text-[#1F8D9D]">
+                    PKR {product.price.toFixed(0)}
+                  </span>
+                )}
+              </motion.div>
+
+              {/* Trust Badges */}
+              <motion.div
+                className="grid grid-cols-2 md:grid-cols-4 gap-3"
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.5 }}
+              >
+                {trustBadges.map((badge, index) => (
+                  <div key={index} className="bg-white/80 backdrop-blur-sm p-3 rounded-xl shadow-sm border border-gray-100 hover:shadow-md transition-shadow">
+                    <div className="flex flex-col items-center text-center space-y-1">
+                      {badge.icon}
+                      <span className="text-xs font-semibold text-[#1B1B1B]">{badge.title}</span>
+                      <span className="text-xs text-gray-600">{badge.description}</span>
+                    </div>
+                  </div>
+                ))}
+              </motion.div>
             </div>
+
+            {/* Product Information Tabs */}
+            <motion.div
+              className="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden"
+              initial={{ opacity: 0, y: 30 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.6 }}
+            >
+              {/* Tab Navigation */}
+              <div className="flex border-b border-gray-200">
+                {[
+                  { key: 'description', label: 'Description', icon: <Heart className="w-4 h-4" /> }
+                ].map((tab) => (
+                  <button
+                    key={tab.key}
+                    onClick={() => setActiveTab(tab.key as any)}
+                    className={`flex-1 flex items-center justify-center space-x-2 py-4 px-6 font-medium transition-all duration-300 ${
+                      activeTab === tab.key
+                        ? 'bg-[#1F8D9D] text-white shadow-lg'
+                        : 'text-gray-600 hover:text-[#1F8D9D] hover:bg-gray-50'
+                    }`}
+                  >
+                    {tab.icon}
+                    <span>{tab.label}</span>
+                  </button>
+                ))}
+              </div>
+
+              {/* Tab Content */}
+              <div className="p-6">
+                <AnimatePresence mode="wait">
+                  {activeTab === 'description' && (
+                    <motion.div
+                      key="description"
+                      initial={{ opacity: 0, x: 20 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      exit={{ opacity: 0, x: -20 }}
+                      transition={{ duration: 0.3 }}
+                    >
+                      <div className="prose prose-gray max-w-none">
+                        <p className="text-lg text-gray-700 leading-relaxed">
+                          {product.description || "Experience the power of nature with our premium hair oil. Specially formulated to nourish, strengthen, and transform your hair naturally. Our unique blend combines traditional wisdom with modern science to deliver exceptional results for all hair types."}
+                        </p>
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
+            </motion.div>
+
+            {/* Enhanced Quantity Selector */}
+            <motion.div
+              className="bg-gradient-to-br from-white via-white to-[#F9F9F9] p-8 rounded-2xl shadow-xl border border-gray-100 relative overflow-hidden"
+              initial={{ opacity: 0, y: 30 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.7 }}
+            >
+              {/* Background Pattern */}
+              <div className="absolute inset-0 bg-gradient-to-br from-[#1F8D9D]/5 via-transparent to-[#3E7346]/5"></div>
+              
+              <div className="relative z-10">
+                <div className="flex items-center justify-between mb-8">
+                  <div className="flex items-center space-x-3">
+                    <div className="w-10 h-10 bg-[#1F8D9D]/10 rounded-full flex items-center justify-center">
+                      <ShoppingCart className="w-5 h-5 text-[#1F8D9D]" />
+                    </div>
+                    <span className="text-xl font-bold text-[#1B1B1B]">Select Quantity</span>
+                  </div>
+                  
+                  <div className="flex items-center space-x-6">
+                    <motion.button
+                      onClick={() => setOrderForm({ ...orderForm, quantity: Math.max(1, orderForm.quantity - 1) })}
+                      className="w-14 h-14 rounded-2xl bg-gradient-to-br from-[#1F8D9D] to-[#186F7B] hover:from-[#186F7B] hover:to-[#1F8D9D] text-white flex items-center justify-center transition-all duration-300 shadow-lg hover:shadow-xl"
+                      whileHover={{ scale: 1.1, rotate: -5 }}
+                      whileTap={{ scale: 0.9 }}
+                      disabled={orderForm.quantity <= 1}
+                    >
+                      <Minus className="w-6 h-6" />
+                    </motion.button>
+                    
+                    <motion.div
+                      className="w-20 h-16 bg-gradient-to-br from-[#1F8D9D] to-[#3E7346] text-white rounded-2xl flex items-center justify-center shadow-lg"
+                      key={orderForm.quantity}
+                      initial={{ scale: 1.2 }}
+                      animate={{ scale: 1 }}
+                      transition={{ type: "spring", stiffness: 300 }}
+                    >
+                      <span className="font-bold text-2xl">{orderForm.quantity}</span>
+                    </motion.div>
+                    
+                    <motion.button
+                      onClick={() => setOrderForm({ ...orderForm, quantity: orderForm.quantity + 1 })}
+                      className="w-14 h-14 rounded-2xl bg-gradient-to-br from-[#1F8D9D] to-[#186F7B] hover:from-[#186F7B] hover:to-[#1F8D9D] text-white flex items-center justify-center transition-all duration-300 shadow-lg hover:shadow-xl"
+                      whileHover={{ scale: 1.1, rotate: 5 }}
+                      whileTap={{ scale: 0.9 }}
+                    >
+                      <Plus className="w-6 h-6" />
+                    </motion.button>
+                  </div>
+                </div>
+                
+                <motion.div
+                  className="bg-gradient-to-r from-white to-[#F9F9F9] p-6 rounded-2xl border-2 border-dashed border-[#1F8D9D]/30 shadow-inner"
+                  initial={{ opacity: 0, scale: 0.95 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  transition={{ delay: 0.8 }}
+                >
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center space-x-3">
+                      <div className="w-8 h-8 bg-[#FDBA2D]/20 rounded-full flex items-center justify-center">
+                        <span className="text-[#FDBA2D] font-bold">₨</span>
+                      </div>
+                      <span className="text-xl font-bold text-gray-700">Total Amount</span>
+                    </div>
+                    <div className="text-right">
+                      {product.is_on_sale && product.sale_price ? (
+                        <>
+                          <div className="text-sm text-gray-500 line-through font-medium">
+                            PKR {(product.price * orderForm.quantity).toFixed(0)}
+                          </div>
+                          <div className="text-3xl font-bold text-[#1F8D9D]">
+                            PKR {(product.sale_price * orderForm.quantity).toFixed(0)}
+                          </div>
+                          <motion.div
+                            className="text-sm text-green-600 font-bold bg-green-50 px-3 py-1 rounded-full inline-block mt-1"
+                            initial={{ scale: 0 }}
+                            animate={{ scale: 1 }}
+                            transition={{ delay: 1, type: "spring" }}
+                          >
+                            💰 Save PKR {((product.price - product.sale_price) * orderForm.quantity).toFixed(0)}
+                          </motion.div>
+                        </>
+                      ) : (
+                        <span className="text-3xl font-bold text-[#1F8D9D]">
+                          PKR {(product.price * orderForm.quantity).toFixed(0)}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                </motion.div>
+              </div>
+            </motion.div>
 
             {/* Order Button */}
             <motion.button
@@ -422,158 +643,342 @@ export default function ProductDetailPage() {
           </motion.div>
         </div>
 
-        {/* Product Features */}
+        {/* Enhanced Product Features */}
         <motion.section
-          className="mb-16"
+          className="mb-20"
           initial={{ opacity: 0, y: 50 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, delay: 0.4 }}
         >
-          <h2 className="text-3xl font-playfair font-bold text-[#1B1B1B] text-center mb-12">
-            Why Choose <span className="text-gradient">ZEENE</span>?
-          </h2>
-          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
+          <div className="text-center mb-16">
+            <motion.h2
+              className="text-4xl md:text-5xl font-playfair font-bold text-[#1B1B1B] mb-4"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.5 }}
+            >
+              Why Choose <span className="bg-gradient-to-r from-[#1F8D9D] to-[#3E7346] bg-clip-text text-transparent">ZEENE</span>?
+            </motion.h2>
+            <motion.p
+              className="text-xl text-gray-600 max-w-2xl mx-auto"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.6 }}
+            >
+              Discover the natural power that transforms your hair with our premium, scientifically-formulated hair oil
+            </motion.p>
+          </div>
+          
+          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
             {features.map((feature, index) => (
               <motion.div
                 key={index}
-                className="bg-white p-6 rounded-xl shadow-sm hover:shadow-lg transition-all duration-300"
-                initial={{ opacity: 0, y: 30 }}
+                className={`relative bg-gradient-to-br ${feature.gradient} p-8 rounded-3xl shadow-lg hover:shadow-2xl transition-all duration-500 border border-white/20 backdrop-blur-sm group overflow-hidden`}
+                initial={{ opacity: 0, y: 50 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.5, delay: 0.5 + index * 0.1 }}
-                whileHover={{ y: -5 }}
+                transition={{ duration: 0.6, delay: 0.7 + index * 0.1 }}
+                whileHover={{ y: -10, scale: 1.02 }}
               >
-                <div className="flex justify-center mb-4">
-                  {feature.icon}
+                {/* Background Pattern */}
+                <div className="absolute inset-0 bg-gradient-to-br from-white/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+                
+                {/* Floating Elements */}
+                <div className="absolute -top-2 -right-2 w-16 h-16 bg-white/10 rounded-full blur-xl group-hover:scale-150 transition-transform duration-700"></div>
+                <div className="absolute -bottom-4 -left-4 w-20 h-20 bg-white/5 rounded-full blur-2xl group-hover:scale-125 transition-transform duration-700"></div>
+                
+                <div className="relative z-10">
+                  <motion.div
+                    className="flex justify-center mb-6"
+                    whileHover={{ rotate: 360, scale: 1.2 }}
+                    transition={{ duration: 0.6 }}
+                  >
+                    <div className="w-16 h-16 bg-white/20 backdrop-blur-sm rounded-2xl flex items-center justify-center shadow-lg">
+                      {feature.icon}
+                    </div>
+                  </motion.div>
+                  
+                  <h3 className="text-xl font-bold text-[#1B1B1B] text-center mb-4 group-hover:text-[#1F8D9D] transition-colors duration-300">
+                    {feature.title}
+                  </h3>
+                  
+                  <p className="text-gray-700 text-center leading-relaxed">
+                    {feature.description}
+                  </p>
+                  
+                  {/* Decorative Line */}
+                  <motion.div
+                    className="w-12 h-1 bg-gradient-to-r from-[#1F8D9D] to-[#3E7346] rounded-full mx-auto mt-4 opacity-0 group-hover:opacity-100"
+                    initial={{ width: 0 }}
+                    whileInView={{ width: 48 }}
+                    transition={{ duration: 0.8, delay: 0.2 }}
+                  ></motion.div>
                 </div>
-                <h3 className="text-lg font-semibold text-[#1B1B1B] text-center mb-2">
-                  {feature.title}
-                </h3>
-                <p className="text-gray-600 text-center text-sm">
-                  {feature.description}
-                </p>
               </motion.div>
             ))}
           </div>
+          
+          {/* Additional Trust Section */}
+          <motion.div
+            className="mt-16 bg-gradient-to-r from-[#1F8D9D]/5 via-white to-[#3E7346]/5 p-8 rounded-3xl border border-gray-100"
+            initial={{ opacity: 0, y: 30 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 1.2 }}
+          >
+            <div className="text-center">
+              <h3 className="text-2xl font-bold text-[#1B1B1B] mb-6">Our Promise to You</h3>
+              <div className="grid md:grid-cols-3 gap-6">
+                <div className="flex items-center justify-center space-x-3">
+                  <CheckCircle className="w-6 h-6 text-[#3E7346]" />
+                  <span className="font-semibold text-gray-700">100% Natural Formula</span>
+                </div>
+                <div className="flex items-center justify-center space-x-3">
+                  <Shield className="w-6 h-6 text-[#1F8D9D]" />
+                  <span className="font-semibold text-gray-700">Dermatologically Tested</span>
+                </div>
+                <div className="flex items-center justify-center space-x-3">
+                  <Heart className="w-6 h-6 text-[#FDBA2D]" />
+                  <span className="font-semibold text-gray-700">Made with Love</span>
+                </div>
+              </div>
+            </div>
+          </motion.div>
         </motion.section>
       </div>
 
-      {/* Order Modal */}
+      {/* Enhanced Order Modal */}
       {showOrderModal && product && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+        <motion.div
+          className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-50"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+        >
           <motion.div
-            className="bg-white rounded-2xl max-w-md w-full p-6"
-            initial={{ opacity: 0, scale: 0.9 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ duration: 0.3 }}
+            className="bg-white rounded-3xl max-w-lg w-full p-8 shadow-3xl relative overflow-hidden"
+            initial={{ opacity: 0, scale: 0.8, y: 50 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.8, y: 50 }}
+            transition={{ duration: 0.4, type: "spring", stiffness: 300 }}
           >
-            <div className="flex items-center justify-between mb-6">
-              <h3 className="text-2xl font-semibold text-[#1B1B1B]">Order {product.name}</h3>
-              <button
-                onClick={() => setShowOrderModal(false)}
-                className="text-gray-400 hover:text-gray-600"
-                title="Close order modal"
-                aria-label="Close order modal"
-              >
-                <X className="w-6 h-6" />
-              </button>
-            </div>
-
-            {orderSuccess ? (
-              <div className="text-center py-8">
-                <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                  <svg className="w-8 h-8 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                  </svg>
-                </div>
-                <h4 className="text-xl font-semibold text-[#1B1B1B] mb-2">Order Placed!</h4>
-                <p className="text-gray-600">Your order has been submitted and is pending approval.</p>
-              </div>
-            ) : (
-              <form onSubmit={handleOrderSubmit} className="space-y-4">
-                <div className="bg-[#F9F9F9] p-4 rounded-lg mb-4">
-                  <div className="flex items-center justify-between mb-3">
-                    <span className="font-semibold">{product.name}</span>
-                    <div className="text-right">
-                      {product.is_on_sale && product.sale_price ? (
-                        <>
-                          <span className="text-sm text-gray-500 line-through block">PKR {product.price.toFixed(0)}</span>
-                          <span className="text-[#1F8D9D] font-bold">PKR {product.sale_price.toFixed(0)} each</span>
-                        </>
-                      ) : (
-                        <span className="text-[#1F8D9D] font-bold">PKR {product.price.toFixed(0)} each</span>
-                      )}
-                    </div>
+            {/* Background Pattern */}
+            <div className="absolute inset-0 bg-gradient-to-br from-[#1F8D9D]/5 via-transparent to-[#3E7346]/5"></div>
+            
+            <div className="relative z-10">
+              <div className="flex items-center justify-between mb-8">
+                <div className="flex items-center space-x-3">
+                  <div className="w-12 h-12 bg-gradient-to-br from-[#1F8D9D] to-[#3E7346] rounded-2xl flex items-center justify-center">
+                    <ShoppingCart className="w-6 h-6 text-white" />
                   </div>
-                  
-                  <div className="flex items-center justify-between mb-3">
-                    <span className="text-sm font-medium text-[#1B1B1B]">Quantity: {orderForm.quantity}</span>
-                  </div>
-                  
-                  <div className="flex items-center justify-between border-t pt-2">
-                    <span className="font-semibold">Total:</span>
-                    <span className="text-[#1F8D9D] font-bold text-lg">
-                      PKR {((product.is_on_sale && product.sale_price ? product.sale_price : product.price) * orderForm.quantity).toFixed(0)}
-                    </span>
-                  </div>
-                  <p className="text-sm text-gray-600 mt-1">Cash on Delivery</p>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-[#1B1B1B] mb-2">Full Name</label>
-                  <div className="relative">
-                    <User className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
-                    <input
-                      type="text"
-                      required
-                      value={orderForm.customer_name}
-                      onChange={(e) => setOrderForm({ ...orderForm, customer_name: e.target.value })}
-                      className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#1F8D9D] focus:border-transparent"
-                      placeholder="Enter your full name"
-                    />
+                  <div>
+                    <h3 className="text-2xl font-bold text-[#1B1B1B]">Complete Your Order</h3>
+                    <p className="text-gray-600">{product.name}</p>
                   </div>
                 </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-[#1B1B1B] mb-2">Delivery Address</label>
-                  <div className="relative">
-                    <MapPin className="absolute left-3 top-3 text-gray-400 w-5 h-5" />
-                    <textarea
-                      required
-                      value={orderForm.address}
-                      onChange={(e) => setOrderForm({ ...orderForm, address: e.target.value })}
-                      className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#1F8D9D] focus:border-transparent"
-                      placeholder="Enter your complete address"
-                      rows={3}
-                    />
-                  </div>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-[#1B1B1B] mb-2">Phone Number</label>
-                  <div className="relative">
-                    <Phone className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
-                    <input
-                      type="tel"
-                      required
-                      value={orderForm.phone}
-                      onChange={(e) => setOrderForm({ ...orderForm, phone: e.target.value })}
-                      className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#1F8D9D] focus:border-transparent"
-                      placeholder="Enter your phone number"
-                    />
-                  </div>
-                </div>
-
-                <button
-                  type="submit"
-                  disabled={orderLoading}
-                  className="w-full py-3 bg-[#1F8D9D] text-white rounded-full transition-colors duration-300 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-[#186F7B]"
+                <motion.button
+                  onClick={() => setShowOrderModal(false)}
+                  className="w-10 h-10 bg-gray-100 hover:bg-gray-200 rounded-full flex items-center justify-center transition-colors"
+                  whileHover={{ scale: 1.1, rotate: 90 }}
+                  whileTap={{ scale: 0.9 }}
                 >
-                  {orderLoading ? "Placing Order..." : "Place Order (Cash on Delivery)"}
-                </button>
-              </form>
-            )}
+                  <X className="w-5 h-5 text-gray-600" />
+                </motion.button>
+              </div>
+
+              {orderSuccess ? (
+                <motion.div
+                  className="text-center py-12"
+                  initial={{ opacity: 0, scale: 0.8 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  transition={{ duration: 0.5 }}
+                >
+                  <motion.div
+                    className="w-20 h-20 bg-gradient-to-br from-green-400 to-green-600 rounded-full flex items-center justify-center mx-auto mb-6 shadow-lg"
+                    initial={{ scale: 0 }}
+                    animate={{ scale: 1 }}
+                    transition={{ delay: 0.2, type: "spring", stiffness: 300 }}
+                  >
+                    <motion.svg
+                      className="w-10 h-10 text-white"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                      initial={{ pathLength: 0 }}
+                      animate={{ pathLength: 1 }}
+                      transition={{ delay: 0.5, duration: 0.8 }}
+                    >
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                    </motion.svg>
+                  </motion.div>
+                  <motion.h4
+                    className="text-2xl font-bold text-[#1B1B1B] mb-3"
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.6 }}
+                  >
+                    Order Placed Successfully! 🎉
+                  </motion.h4>
+                  <motion.p
+                    className="text-gray-600 text-lg"
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.7 }}
+                  >
+                    Your order has been submitted and is pending approval. We'll contact you soon!
+                  </motion.p>
+                </motion.div>
+              ) : (
+                <form onSubmit={handleOrderSubmit} className="space-y-6">
+                  {/* Enhanced Order Summary */}
+                  <motion.div
+                    className="bg-gradient-to-r from-[#F9F9F9] to-white p-6 rounded-2xl border border-gray-100 shadow-sm"
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.1 }}
+                  >
+                    <div className="flex items-center justify-between mb-4">
+                      <div className="flex items-center space-x-3">
+                        <div className="w-12 h-12 bg-[#1F8D9D]/10 rounded-xl flex items-center justify-center">
+                          <Package className="w-6 h-6 text-[#1F8D9D]" />
+                        </div>
+                        <div>
+                          <span className="font-bold text-lg text-[#1B1B1B]">{product.name}</span>
+                          <div className="text-right">
+                            {product.is_on_sale && product.sale_price ? (
+                              <div className="flex items-center space-x-2">
+                                <span className="text-sm text-gray-500 line-through">PKR {product.price.toFixed(0)}</span>
+                                <span className="text-[#1F8D9D] font-bold text-lg">PKR {product.sale_price.toFixed(0)} each</span>
+                              </div>
+                            ) : (
+                              <span className="text-[#1F8D9D] font-bold text-lg">PKR {product.price.toFixed(0)} each</span>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                    
+                    <div className="flex items-center justify-between mb-4 py-2 border-t border-gray-200">
+                      <span className="font-medium text-[#1B1B1B] flex items-center space-x-2">
+                        <span>Quantity:</span>
+                        <span className="bg-[#1F8D9D] text-white px-3 py-1 rounded-full text-sm font-bold">{orderForm.quantity}</span>
+                      </span>
+                    </div>
+                    
+                    <div className="flex items-center justify-between border-t border-gray-200 pt-4">
+                      <span className="text-xl font-bold text-[#1B1B1B]">Total Amount:</span>
+                      <div className="text-right">
+                        <span className="text-2xl font-bold text-[#1F8D9D]">
+                          PKR {((product.is_on_sale && product.sale_price ? product.sale_price : product.price) * orderForm.quantity).toFixed(0)}
+                        </span>
+                        <p className="text-sm text-gray-600 flex items-center space-x-1 mt-1">
+                          <Truck className="w-4 h-4" />
+                          <span>Cash on Delivery</span>
+                        </p>
+                      </div>
+                    </div>
+                  </motion.div>
+
+                  {/* Enhanced Form Fields */}
+                  <div className="space-y-6">
+                    <motion.div
+                      initial={{ opacity: 0, x: -20 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{ delay: 0.2 }}
+                    >
+                      <label className="block text-sm font-bold text-[#1B1B1B] mb-3 flex items-center space-x-2">
+                        <User className="w-4 h-4 text-[#1F8D9D]" />
+                        <span>Full Name</span>
+                      </label>
+                      <div className="relative">
+                        <input
+                          type="text"
+                          required
+                          value={orderForm.customer_name}
+                          onChange={(e) => setOrderForm({ ...orderForm, customer_name: e.target.value })}
+                          className="w-full pl-12 pr-4 py-4 border-2 border-gray-200 rounded-2xl focus:ring-4 focus:ring-[#1F8D9D]/20 focus:border-[#1F8D9D] transition-all duration-300 text-lg"
+                          placeholder="Enter your full name"
+                        />
+                        <User className="absolute left-4 top-1/2 transform -translate-y-1/2 text-[#1F8D9D] w-5 h-5" />
+                      </div>
+                    </motion.div>
+
+                    <motion.div
+                      initial={{ opacity: 0, x: -20 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{ delay: 0.3 }}
+                    >
+                      <label className="block text-sm font-bold text-[#1B1B1B] mb-3 flex items-center space-x-2">
+                        <MapPin className="w-4 h-4 text-[#1F8D9D]" />
+                        <span>Delivery Address</span>
+                      </label>
+                      <div className="relative">
+                        <textarea
+                          required
+                          value={orderForm.address}
+                          onChange={(e) => setOrderForm({ ...orderForm, address: e.target.value })}
+                          className="w-full pl-12 pr-4 py-4 border-2 border-gray-200 rounded-2xl focus:ring-4 focus:ring-[#1F8D9D]/20 focus:border-[#1F8D9D] transition-all duration-300 text-lg resize-none"
+                          placeholder="Enter your complete delivery address"
+                          rows={3}
+                        />
+                        <MapPin className="absolute left-4 top-4 text-[#1F8D9D] w-5 h-5" />
+                      </div>
+                    </motion.div>
+
+                    <motion.div
+                      initial={{ opacity: 0, x: -20 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{ delay: 0.4 }}
+                    >
+                      <label className="block text-sm font-bold text-[#1B1B1B] mb-3 flex items-center space-x-2">
+                        <Phone className="w-4 h-4 text-[#1F8D9D]" />
+                        <span>Phone Number</span>
+                      </label>
+                      <div className="relative">
+                        <input
+                          type="tel"
+                          required
+                          value={orderForm.phone}
+                          onChange={(e) => setOrderForm({ ...orderForm, phone: e.target.value })}
+                          className="w-full pl-12 pr-4 py-4 border-2 border-gray-200 rounded-2xl focus:ring-4 focus:ring-[#1F8D9D]/20 focus:border-[#1F8D9D] transition-all duration-300 text-lg"
+                          placeholder="Enter your phone number"
+                        />
+                        <Phone className="absolute left-4 top-1/2 transform -translate-y-1/2 text-[#1F8D9D] w-5 h-5" />
+                      </div>
+                    </motion.div>
+                  </div>
+
+                  <motion.button
+                    type="submit"
+                    disabled={orderLoading}
+                    className="w-full py-5 bg-gradient-to-r from-[#1F8D9D] to-[#3E7346] hover:from-[#186F7B] hover:to-[#2F5A35] text-white rounded-2xl font-bold text-lg transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg hover:shadow-xl flex items-center justify-center space-x-3 relative overflow-hidden group mt-8"
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.5 }}
+                  >
+                    <div className="absolute inset-0 bg-gradient-to-r from-white/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                    {orderLoading ? (
+                      <>
+                        <motion.div
+                          className="w-5 h-5 border-2 border-white border-t-transparent rounded-full"
+                          animate={{ rotate: 360 }}
+                          transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+                        />
+                        <span className="relative z-10">Placing Order...</span>
+                      </>
+                    ) : (
+                      <>
+                        <ShoppingCart className="w-6 h-6 relative z-10" />
+                        <span className="relative z-10">Place Order - Cash on Delivery</span>
+                        <span className="relative z-10 text-xl">💳</span>
+                      </>
+                    )}
+                  </motion.button>
+                </form>
+              )}
+            </div>
           </motion.div>
-        </div>
+        </motion.div>
       )}
 
       {/* Authentication Modal */}

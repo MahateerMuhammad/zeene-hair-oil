@@ -52,16 +52,25 @@ function Navigation() {
     { href: "/contact", label: "Contact" }
   ], [])
 
-  const authItems = useMemo(() => {
+  // Define proper types for auth items
+  type AuthItem = {
+    href?: string;
+    label: string;
+    action?: () => Promise<void>;
+    icon?: React.ComponentType<{ size?: number }>;
+    primary?: boolean;
+  }
+
+  const authItems = useMemo((): AuthItem[] => {
     if (user) {
       return [
-        ...(userRole === "admin" ? [{ href: "/admin", label: "Admin" }] : []),
-        { action: handleSignOut, label: "Sign Out", icon: LogOut }
+        ...(userRole === "admin" ? [{ href: "/admin", label: "Admin" } as AuthItem] : []),
+        { action: handleSignOut, label: "Sign Out", icon: LogOut } as AuthItem
       ]
     }
     return [
-      { href: "/login", label: "Login" },
-      { href: "/signup", label: "Sign Up", primary: true }
+      { href: "/login", label: "Login" } as AuthItem,
+      { href: "/signup", label: "Sign Up", primary: true } as AuthItem
     ]
   }, [user, userRole, handleSignOut])
 
