@@ -162,7 +162,7 @@ export async function POST(request: NextRequest) {
               
               <div style="background: #3E7346; padding: 15px; border-radius: 8px; color: white; text-align: center;">
                 <p style="margin: 0; font-weight: bold;">
-                  Your order will be delivered within 2-3 business days. Our team will contact you before delivery.
+                  Your order will be delivered within 5-7 business days. Our team will contact you before delivery.
                 </p>
               </div>
               
