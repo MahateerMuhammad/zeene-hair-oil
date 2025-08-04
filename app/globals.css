@@ -395,3 +395,371 @@ input:focus, textarea:focus {
 .custom-scrollbar::-webkit-scrollbar-thumb:hover {
   background: #3e7346;
 }
+
+/* Mobile-specific optimizations */
+@media (max-width: 768px) {
+  /* Improve touch targets */
+  button, a, input, textarea, select {
+    min-height: 44px;
+    min-width: 44px;
+  }
+  
+  /* Optimize modal scrolling on mobile */
+  .force-scrollbar::-webkit-scrollbar {
+    width: 8px !important;
+  }
+  
+  /* Reduce motion on mobile for better performance */
+  * {
+    animation-duration: 0.3s !important;
+    transition-duration: 0.3s !important;
+  }
+  
+  /* Optimize text rendering on mobile */
+  body {
+    -webkit-text-size-adjust: 100%;
+    text-size-adjust: 100%;
+  }
+  
+  /* Improve form input experience on mobile */
+  input[type="text"], 
+  input[type="tel"], 
+  input[type="email"], 
+  textarea {
+    font-size: 16px; /* Prevent zoom on iOS */
+    border-radius: 12px;
+  }
+  
+  /* Optimize image loading on mobile */
+  img {
+    image-rendering: crisp-edges;
+    image-rendering: -webkit-optimize-contrast;
+  }
+  
+  /* Better spacing for mobile */
+  .container {
+    padding-left: 1rem;
+    padding-right: 1rem;
+  }
+}
+
+/* Tablet optimizations */
+@media (min-width: 769px) and (max-width: 1024px) {
+  .container {
+    padding-left: 1.5rem;
+    padding-right: 1.5rem;
+  }
+}
+
+/* High DPI displays */
+@media (-webkit-min-device-pixel-ratio: 2), (min-resolution: 192dpi) {
+  img {
+    image-rendering: -webkit-optimize-contrast;
+  }
+}
+
+/* Dark mode mobile optimizations */
+@media (prefers-color-scheme: dark) and (max-width: 768px) {
+  body {
+    background-color: #1a1a1a;
+  }
+}
+
+/* Navigation optimizations */
+.navigation-compact {
+  /* Ensure smooth transitions for height changes */
+  transition: height 0.3s ease-in-out;
+}
+
+/* Enhanced navigation optimizations */
+.navigation-enhanced {
+  /* Enhanced mobile navigation height */
+  height: 64px; /* 16 * 4px */
+}
+
+@media (min-width: 640px) {
+  .navigation-enhanced {
+    height: 72px; /* 18 * 4px */
+  }
+}
+
+@media (min-width: 768px) {
+  .navigation-enhanced {
+    height: 80px; /* 20 * 4px */
+  }
+}
+
+@media (min-width: 1024px) {
+  .navigation-enhanced {
+    height: 88px; /* 22 * 4px */
+  }
+}
+
+/* Mobile navigation optimizations */
+@media (max-width: 768px) {
+  /* Ensure navigation items are properly spaced */
+  .mobile-nav-item {
+    min-height: 36px;
+    display: flex;
+    align-items: center;
+  }
+  
+  /* Large prominent logo sizing for mobile */
+  .nav-logo {
+    max-height: 56px; /* 14 * 4px - Large and prominent */
+    width: auto;
+  }
+  
+  /* Compact navigation spacing */
+  .nav-compact-mobile {
+    padding-top: 0.75rem; /* 12px */
+    padding-bottom: 0.75rem; /* 12px */
+  }
+}
+
+/* Desktop navigation optimizations */
+@media (min-width: 640px) {
+  .nav-logo {
+    max-height: 64px; /* 16 * 4px - Larger for tablet */
+    width: auto;
+  }
+}
+
+@media (min-width: 768px) {
+  .nav-logo {
+    max-height: 72px; /* 18 * 4px - Even larger for desktop */
+    width: auto;
+  }
+}
+
+@media (min-width: 1024px) {
+  .nav-logo {
+    max-height: 80px; /* 20 * 4px - Maximum size for large screens */
+    width: auto;
+  }
+}
+
+/* Hero section spacing adjustments */
+@media (max-width: 768px) {
+  .hero-mobile-spacing {
+    padding-top: 3rem; /* 48px - accounts for compact nav */
+  }
+  
+  /* Improved mobile content spacing */
+  .mobile-content-spacing {
+    padding-top: 1.5rem; /* 24px */
+    padding-bottom: 1.5rem; /* 24px */
+  }
+  
+  /* Better mobile typography */
+  .mobile-heading {
+    font-size: 2.25rem; /* 36px */
+    line-height: 1.2;
+    margin-bottom: 1rem;
+  }
+  
+  .mobile-subheading {
+    font-size: 1.125rem; /* 18px */
+    line-height: 1.5;
+    margin-bottom: 1.5rem;
+  }
+}
+
+@media (min-width: 640px) and (max-width: 768px) {
+  .hero-mobile-spacing {
+    padding-top: 4rem; /* 64px - accounts for standard nav */
+  }
+}
+
+/* Improved mobile button spacing */
+@media (max-width: 640px) {
+  .mobile-button-stack {
+    flex-direction: column;
+    gap: 0.75rem; /* 12px */
+  }
+  
+  .mobile-button {
+    width: 100%;
+    text-align: center;
+    padding: 0.75rem 1.5rem; /* 12px 24px */
+  }
+}
+
+/* Enhanced navigation effects */
+.nav-item-underline {
+  position: relative;
+  overflow: hidden;
+}
+
+.nav-item-underline::after {
+  content: '';
+  position: absolute;
+  bottom: -2px;
+  left: 0;
+  width: 0;
+  height: 2px;
+  background: linear-gradient(90deg, #1F8D9D, #FDBA2D);
+  transition: width 0.3s ease-in-out;
+}
+
+.nav-item-underline:hover::after {
+  width: 100%;
+}
+
+/* Logo glow effect */
+.logo-glow {
+  filter: drop-shadow(0 0 8px rgba(31, 141, 157, 0.3));
+  transition: filter 0.3s ease-in-out;
+}
+
+.logo-glow:hover {
+  filter: drop-shadow(0 0 12px rgba(31, 141, 157, 0.5));
+}
+
+/* Enhanced mobile menu */
+.mobile-menu-enhanced {
+  -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(10px);
+  background: rgba(255, 255, 255, 0.95);
+  border-top: 1px solid rgba(31, 141, 157, 0.2);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+}
+
+/* Responsive navigation heights */
+@media (max-width: 640px) {
+  .nav-responsive-height {
+    min-height: 64px;
+  }
+}
+
+@media (min-width: 641px) and (max-width: 768px) {
+  .nav-responsive-height {
+    min-height: 72px;
+  }
+}
+
+@media (min-width: 769px) and (max-width: 1024px) {
+  .nav-responsive-height {
+    min-height: 80px;
+  }
+}
+
+@media (min-width: 1025px) {
+  .nav-responsive-height {
+    min-height: 88px;
+  }
+}
+
+/* Admin Panel Responsive Optimizations */
+.admin-responsive {
+  /* Mobile-first admin panel styling */
+}
+
+@media (max-width: 640px) {
+  /* Mobile admin optimizations */
+  .admin-card {
+    padding: 1rem;
+    margin-bottom: 1rem;
+  }
+  
+  .admin-grid {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+  
+  .admin-table {
+    font-size: 0.875rem;
+  }
+  
+  .admin-button {
+    padding: 0.5rem 0.75rem;
+    font-size: 0.875rem;
+  }
+  
+  .admin-modal {
+    margin: 0.5rem;
+    max-height: 95vh;
+  }
+  
+  .admin-form-input {
+    padding: 0.5rem 0.75rem;
+    font-size: 0.875rem;
+  }
+}
+
+@media (min-width: 641px) and (max-width: 768px) {
+  /* Tablet admin optimizations */
+  .admin-card {
+    padding: 1.25rem;
+  }
+  
+  .admin-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1.25rem;
+  }
+}
+
+@media (min-width: 769px) {
+  /* Desktop admin optimizations */
+  .admin-card {
+    padding: 1.5rem;
+  }
+  
+  .admin-grid {
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1.5rem;
+  }
+}
+
+/* Admin panel specific utilities */
+.line-clamp-2 {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.line-clamp-3 {
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+/* Responsive text truncation */
+.truncate-mobile {
+  @media (max-width: 640px) {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+}
+
+/* Mobile-friendly scrollbars */
+@media (max-width: 768px) {
+  .admin-scroll::-webkit-scrollbar {
+    width: 4px;
+  }
+  
+  .admin-scroll::-webkit-scrollbar-track {
+    background: #f1f1f1;
+  }
+  
+  .admin-scroll::-webkit-scrollbar-thumb {
+    background: #c1c1c1;
+    border-radius: 2px;
+  }
+}
+
+/* Enhanced mobile touch targets */
+@media (max-width: 768px) {
+  .touch-target {
+    min-height: 44px;
+    min-width: 44px;
+  }
+  
+  .touch-button {
+    padding: 0.75rem 1rem;
+    font-size: 0.875rem;
+  }
+}

@@ -13,7 +13,7 @@ VALUES (
   5242880, -- 5MB limit
   ARRAY['image/jpeg', 'image/png', 'image/webp', 'image/jpg']
 )
-ON CONFLICT (id) DO UPDATE SET
+ON CONFLICT (id) DO UPDATE SET1
   public = true,
   file_size_limit = 5242880,
   allowed_mime_types = ARRAY['image/jpeg', 'image/png', 'image/webp', 'image/jpg'];

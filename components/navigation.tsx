@@ -15,10 +15,11 @@ const NavigationItem = memo(({ href, children, onClick }: {
 }) => (
   <Link 
     href={href} 
-    className="text-[#1B1B1B] hover:text-[#1F8D9D] transition-colors"
+    className="text-[#1B1B1B] hover:text-[#1F8D9D] transition-all duration-300 text-sm md:text-base font-medium hover:scale-105 relative group"
     onClick={onClick}
   >
     {children}
+    <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-[#1F8D9D] transition-all duration-300 group-hover:w-full"></span>
   </Link>
 ))
 
@@ -76,38 +77,45 @@ function Navigation() {
 
   return (
     <motion.nav 
-      className="bg-white/95 backdrop-blur-sm shadow-lg sticky top-0 z-50"
+      className="bg-white/95 backdrop-blur-sm shadow-sm border-b border-gray-100 sticky top-0 z-50"
       initial={{ y: -100 }}
       animate={{ y: 0 }}
       transition={{ duration: 0.6 }}
     >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex justify-between items-center h-24">
+        <div className="flex justify-between items-center h-16 sm:h-18 md:h-20 lg:h-22">
           {/* Logo */}
           <motion.div
             whileHover={{ scale: 1.05 }}
             transition={{ duration: 0.2 }}
           >
-            <Link href="/" className="flex items-center space-x-2">
-              <Image src="/zeene-logo.png" alt="ZEENE Logo" width={220} height={80} className="h-20 w-auto" />
+            <Link href="/" className="flex items-center">
+              <Image 
+                src="/zeene-new-logo.png" 
+                alt="ZEENE Logo" 
+                width={200} 
+                height={70} 
+                className="h-14 sm:h-16 md:h-18 lg:h-20 w-auto" 
+                priority
+              />
             </Link>
           </motion.div>
 
           {/* Desktop Navigation */}
-          <div className="hidden md:flex items-center space-x-8">
+          <div className="hidden md:flex items-center space-x-8 lg:space-x-10">
             {navigationItems.map((item) => (
               <NavigationItem key={item.href} href={item.href}>
                 {item.label}
               </NavigationItem>
             ))}
 
-            <div className="flex items-center space-x-4">
+            <div className="flex items-center space-x-4 lg:space-x-6">
               {authItems.map((item, index) => (
                 item.action ? (
                   <button
                     key={index}
                     onClick={item.action}
-                    className="flex items-center space-x-1 text-[#1B1B1B] hover:text-[#1F8D9D] transition-colors"
+                    className="flex items-center space-x-1 text-[#1B1B1B] hover:text-[#1F8D9D] transition-all duration-300 text-sm md:text-base font-medium hover:scale-105"
                   >
                     {item.icon && <item.icon size={16} />}
                     <span>{item.label}</span>
@@ -117,8 +125,8 @@ function Navigation() {
                     key={item.href}
                     href={item.href!}
                     className={item.primary 
-                      ? "bg-[#1F8D9D] hover:bg-[#1F8D9D]/90 text-white px-6 py-3 rounded-lg font-semibold transition-all duration-300 transform hover:scale-105"
-                      : "text-[#1B1B1B] hover:text-[#1F8D9D] transition-colors"
+                      ? "bg-gradient-to-r from-[#1F8D9D] to-[#1A7A87] hover:from-[#1A7A87] hover:to-[#1F8D9D] text-white px-5 py-2.5 lg:px-6 lg:py-3 rounded-xl font-semibold transition-all duration-300 transform hover:scale-105 hover:shadow-lg text-sm md:text-base"
+                      : "text-[#1B1B1B] hover:text-[#1F8D9D] transition-all duration-300 text-sm md:text-base font-medium hover:scale-105 relative group"
                     }
                   >
                     {item.label}
@@ -130,7 +138,11 @@ function Navigation() {
 
           {/* Mobile menu button */}
           <div className="md:hidden">
-            <button onClick={toggleMenu} className="text-[#1B1B1B] hover:text-[#1F8D9D]">
+            <button 
+              onClick={toggleMenu} 
+              className="text-[#1B1B1B] hover:text-[#1F8D9D] p-2 rounded-lg hover:bg-gray-100 transition-all duration-300 hover:scale-110"
+              aria-label="Toggle menu"
+            >
               {isOpen ? <X size={24} /> : <Menu size={24} />}
             </button>
           </div>
@@ -146,10 +158,10 @@ function Navigation() {
               exit={{ opacity: 0, height: 0 }}
               transition={{ duration: 0.2 }}
             >
-              <div className="px-2 pt-2 pb-3 space-y-1 sm:px-3 bg-white border-t">
+              <div className="px-4 pt-3 pb-4 space-y-2 bg-white/95 backdrop-blur-sm border-t border-gray-200 shadow-lg">
                 {navigationItems.map((item) => (
                   <NavigationItem key={item.href} href={item.href} onClick={closeMenu}>
-                    <span className="block px-3 py-2">{item.label}</span>
+                    <span className="block px-4 py-3 rounded-lg hover:bg-gray-100 transition-colors text-base font-medium">{item.label}</span>
                   </NavigationItem>
                 ))}
 
@@ -158,7 +170,7 @@ function Navigation() {
                     <button
                       key={index}
                       onClick={item.action}
-                      className="block w-full text-left px-3 py-2 text-[#1B1B1B] hover:text-[#1F8D9D] transition-colors"
+                      className="block w-full text-left px-4 py-3 rounded-lg hover:bg-gray-100 text-[#1B1B1B] hover:text-[#1F8D9D] transition-colors text-base font-medium"
                     >
                       {item.label}
                     </button>
@@ -166,7 +178,7 @@ function Navigation() {
                     <Link
                       key={item.href}
                       href={item.href!}
-                      className="block px-3 py-2 text-[#1B1B1B] hover:text-[#1F8D9D] transition-colors"
+                      className="block px-4 py-3 rounded-lg hover:bg-gray-100 text-[#1B1B1B] hover:text-[#1F8D9D] transition-colors text-base font-medium"
                       onClick={closeMenu}
                     >
                       {item.label}

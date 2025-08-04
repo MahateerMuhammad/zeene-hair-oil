@@ -16,7 +16,7 @@ export default function HeroSection() {
   }, [])
 
   return (
-    <section className="relative min-h-screen flex items-center justify-center overflow-hidden bg-gradient-to-br from-[#F9F9F9] via-white to-[#1F8D9D]/10">
+    <section className="relative min-h-screen flex items-center justify-center overflow-hidden bg-gradient-to-br from-[#F9F9F9] via-white to-[#1F8D9D]/10 pt-16 sm:pt-18 md:pt-20 lg:pt-22">
       {/* Animated Background Elements */}
       <div className="absolute inset-0">
         {/* Oil Drops Animation */}
@@ -50,7 +50,7 @@ export default function HeroSection() {
       </div>
 
       <div className="container mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
-        <div className="grid lg:grid-cols-2 gap-12 items-center">
+        <div className="grid lg:grid-cols-2 gap-8 sm:gap-12 items-center">
           {/* Left Content */}
           <motion.div 
             className="text-center lg:text-left"
@@ -59,7 +59,7 @@ export default function HeroSection() {
             transition={{ duration: 0.8 }}
           >
             <motion.h1 
-              className="text-5xl md:text-7xl font-playfair font-bold mb-6"
+              className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-playfair font-bold mb-4 sm:mb-6"
               initial={{ opacity: 0, y: 30 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.8, delay: 0.2 }}
@@ -70,7 +70,7 @@ export default function HeroSection() {
             </motion.h1>
 
             <motion.p 
-              className="text-xl md:text-2xl text-gray-600 mb-8 leading-relaxed"
+              className="text-lg sm:text-xl md:text-2xl text-gray-600 mb-6 sm:mb-8 leading-relaxed"
               initial={{ opacity: 0, y: 30 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.8, delay: 0.4 }}
@@ -80,7 +80,7 @@ export default function HeroSection() {
             </motion.p>
 
             <motion.div 
-              className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start"
+              className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center lg:justify-start"
               initial={{ opacity: 0, y: 30 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.8, delay: 0.6 }}
@@ -91,7 +91,7 @@ export default function HeroSection() {
               >
                 <Link
                   href="/products"
-                  className="inline-block text-lg px-8 py-4 bg-[#1F8D9D] text-white rounded-lg font-semibold transition-all duration-300 shadow-lg hover:shadow-xl"
+                  className="inline-block text-base sm:text-lg px-6 sm:px-8 py-3 sm:py-4 bg-[#1F8D9D] text-white rounded-lg font-semibold transition-all duration-300 shadow-lg hover:shadow-xl text-center"
                 >
                   Buy Now
                 </Link>
@@ -102,7 +102,7 @@ export default function HeroSection() {
               >
                 <Link
                   href="/products"
-                  className="inline-block text-lg px-8 py-4 bg-gray-200 text-[#1F8D9D] rounded-lg font-semibold transition-all duration-300 hover:bg-gray-300"
+                  className="inline-block text-base sm:text-lg px-6 sm:px-8 py-3 sm:py-4 bg-gray-200 text-[#1F8D9D] rounded-lg font-semibold transition-all duration-300 hover:bg-gray-300 text-center"
                 >
                   Learn More
                 </Link>
@@ -136,7 +136,7 @@ export default function HeroSection() {
                   alt="ZEENE Hair Oil Bottle"
                   width={400}
                   height={500}
-                  className="w-80 h-96 object-cover rounded-2xl"
+                  className="w-64 h-80 sm:w-72 sm:h-88 lg:w-80 lg:h-96 object-cover rounded-2xl"
                 />
 
                 {/* Glow Effect */}

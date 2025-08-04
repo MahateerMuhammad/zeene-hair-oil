@@ -436,40 +436,46 @@ export default function AdminDashboard() {
       <div className="min-h-screen bg-[#F9F9F9]">
         <Navigation />
 
-      <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="mb-8">
-          <h1 className="text-4xl font-playfair font-bold text-[#1B1B1B] mb-2">Admin Dashboard</h1>
-          <p className="text-gray-600">Manage your ZEENE store</p>
+      <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
+        <div className="mb-6 sm:mb-8">
+          <h1 className="text-2xl sm:text-3xl lg:text-4xl font-playfair font-bold text-[#1B1B1B] mb-2">Admin Dashboard</h1>
+          <p className="text-sm sm:text-base text-gray-600">Manage your ZEENE store</p>
         </div>
 
         {/* Stats Cards */}
-        <div className="grid md:grid-cols-3 gap-6 mb-8">
-          <div className="bg-white p-6 rounded-xl shadow-lg">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 mb-6 sm:mb-8">
+          <div className="bg-white p-4 sm:p-6 rounded-xl shadow-lg hover:shadow-xl transition-shadow">
             <div className="flex items-center">
-              <ShoppingCart className="w-8 h-8 text-[#1F8D9D]" />
-              <div className="ml-4">
-                <p className="text-sm text-gray-600">Total Orders</p>
-                <p className="text-2xl font-bold text-[#1B1B1B]">{orders.length}</p>
+              <div className="flex-shrink-0">
+                <ShoppingCart className="w-6 h-6 sm:w-8 sm:h-8 text-[#1F8D9D]" />
+              </div>
+              <div className="ml-3 sm:ml-4 min-w-0 flex-1">
+                <p className="text-xs sm:text-sm text-gray-600 truncate">Total Orders</p>
+                <p className="text-xl sm:text-2xl font-bold text-[#1B1B1B]">{orders.length}</p>
               </div>
             </div>
           </div>
 
-          <div className="bg-white p-6 rounded-xl shadow-lg">
+          <div className="bg-white p-4 sm:p-6 rounded-xl shadow-lg hover:shadow-xl transition-shadow">
             <div className="flex items-center">
-              <Package className="w-8 h-8 text-[#FDBA2D]" />
-              <div className="ml-4">
-                <p className="text-sm text-gray-600">Products</p>
-                <p className="text-2xl font-bold text-[#1B1B1B]">{products.length}</p>
+              <div className="flex-shrink-0">
+                <Package className="w-6 h-6 sm:w-8 sm:h-8 text-[#FDBA2D]" />
+              </div>
+              <div className="ml-3 sm:ml-4 min-w-0 flex-1">
+                <p className="text-xs sm:text-sm text-gray-600 truncate">Products</p>
+                <p className="text-xl sm:text-2xl font-bold text-[#1B1B1B]">{products.length}</p>
               </div>
             </div>
           </div>
 
-          <div className="bg-white p-6 rounded-xl shadow-lg">
+          <div className="bg-white p-4 sm:p-6 rounded-xl shadow-lg hover:shadow-xl transition-shadow sm:col-span-2 lg:col-span-1">
             <div className="flex items-center">
-              <Users className="w-8 h-8 text-[#3E7346]" />
-              <div className="ml-4">
-                <p className="text-sm text-gray-600">Pending Orders</p>
-                <p className="text-2xl font-bold text-[#1B1B1B]">
+              <div className="flex-shrink-0">
+                <Users className="w-6 h-6 sm:w-8 sm:h-8 text-[#3E7346]" />
+              </div>
+              <div className="ml-3 sm:ml-4 min-w-0 flex-1">
+                <p className="text-xs sm:text-sm text-gray-600 truncate">Pending Orders</p>
+                <p className="text-xl sm:text-2xl font-bold text-[#1B1B1B]">
                   {orders.filter((order) => order.status === "pending").length}
                 </p>
               </div>
@@ -480,52 +486,61 @@ export default function AdminDashboard() {
         {/* Tabs */}
         <div className="bg-white rounded-xl shadow-lg">
           <div className="border-b border-gray-200">
-            <nav className="flex space-x-8 px-6">
+            <nav className="flex space-x-4 sm:space-x-8 px-4 sm:px-6 overflow-x-auto">
               <button
                 onClick={() => setActiveTab("orders")}
-                className={`py-4 px-1 border-b-2 font-medium text-sm ${
+                className={`py-3 sm:py-4 px-2 sm:px-1 border-b-2 font-medium text-sm sm:text-base whitespace-nowrap transition-colors ${
                   activeTab === "orders"
                     ? "border-[#1F8D9D] text-[#1F8D9D]"
                     : "border-transparent text-gray-500 hover:text-gray-700"
                 }`}
               >
-                Orders
+                <span className="flex items-center space-x-2">
+                  <ShoppingCart className="w-4 h-4 sm:hidden" />
+                  <span>Orders</span>
+                </span>
               </button>
               <button
                 onClick={() => setActiveTab("products")}
-                className={`py-4 px-1 border-b-2 font-medium text-sm ${
+                className={`py-3 sm:py-4 px-2 sm:px-1 border-b-2 font-medium text-sm sm:text-base whitespace-nowrap transition-colors ${
                   activeTab === "products"
                     ? "border-[#1F8D9D] text-[#1F8D9D]"
                     : "border-transparent text-gray-500 hover:text-gray-700"
                 }`}
               >
-                Products
+                <span className="flex items-center space-x-2">
+                  <Package className="w-4 h-4 sm:hidden" />
+                  <span>Products</span>
+                </span>
               </button>
             </nav>
           </div>
 
-          <div className="p-6">
+          <div className="p-4 sm:p-6">
             {activeTab === "orders" ? (
               <div>
-                <div className="flex items-center justify-between mb-6">
-                  <h2 className="text-2xl font-semibold text-[#1B1B1B]">Orders Management</h2>
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-4 sm:mb-6">
+                  <h2 className="text-xl sm:text-2xl font-semibold text-[#1B1B1B] mb-2 sm:mb-0">Orders Management</h2>
+                  <div className="text-sm text-gray-500">
+                    {orders.length} total orders
+                  </div>
                 </div>
 
                 {orders.length === 0 ? (
-                  <div className="text-center py-12">
-                    <ShoppingCart className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-                    <p className="text-gray-600">No orders yet</p>
+                  <div className="text-center py-8 sm:py-12">
+                    <ShoppingCart className="w-8 h-8 sm:w-12 sm:h-12 text-gray-400 mx-auto mb-4" />
+                    <p className="text-sm sm:text-base text-gray-600">No orders yet</p>
                   </div>
                 ) : (
-                  <div className="max-h-96 overflow-y-auto space-y-4 pr-2">
+                  <div className="max-h-96 sm:max-h-[32rem] overflow-y-auto space-y-3 sm:space-y-4 pr-1 sm:pr-2">
                     {orders.map((order) => (
-                      <div key={order.id} className="border border-gray-200 rounded-lg p-4">
-                        <div className="flex items-center justify-between">
-                          <div className="flex-1">
-                            <div className="flex items-center space-x-4 mb-2">
-                              <h3 className="font-semibold text-[#1B1B1B]">{order.customer_name}</h3>
+                      <div key={order.id} className="border border-gray-200 rounded-lg p-3 sm:p-4 hover:shadow-md transition-shadow">
+                        <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between space-y-3 sm:space-y-0">
+                          <div className="flex-1 min-w-0">
+                            <div className="flex flex-col sm:flex-row sm:items-center space-y-2 sm:space-y-0 sm:space-x-4 mb-3">
+                              <h3 className="font-semibold text-[#1B1B1B] text-sm sm:text-base truncate">{order.customer_name}</h3>
                               <span
-                                className={`px-2 py-1 rounded-full text-xs font-medium ${
+                                className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium self-start ${
                                   order.status === "pending"
                                     ? "bg-yellow-100 text-yellow-800"
                                     : order.status === "approved"
@@ -536,31 +551,37 @@ export default function AdminDashboard() {
                                 {order.status.charAt(0).toUpperCase() + order.status.slice(1)}
                               </span>
                             </div>
-                            <p className="text-sm text-gray-600 mb-1">
-                              Product: {order.products?.name} - PKR {order.products?.price}
-                            </p>
-                            <p className="text-sm text-gray-600 mb-1">Phone: {order.phone}</p>
-                            <p className="text-sm text-gray-600">Address: {order.address}</p>
-                            <p className="text-xs text-gray-500 mt-2">
-                              Ordered: {new Date(order.created_at).toLocaleDateString()}
-                            </p>
+                            <div className="space-y-1 text-xs sm:text-sm text-gray-600">
+                              <p className="break-words">
+                                <span className="font-medium">Product:</span> {order.products?.name} - PKR {order.products?.price}
+                              </p>
+                              <p className="break-all">
+                                <span className="font-medium">Phone:</span> {order.phone}
+                              </p>
+                              <p className="break-words">
+                                <span className="font-medium">Address:</span> {order.address}
+                              </p>
+                              <p className="text-xs text-gray-500 mt-2">
+                                <span className="font-medium">Ordered:</span> {new Date(order.created_at).toLocaleDateString()}
+                              </p>
+                            </div>
                           </div>
 
                           {order.status === "pending" && (
-                            <div className="flex space-x-2">
+                            <div className="flex flex-row sm:flex-col space-x-2 sm:space-x-0 sm:space-y-2 flex-shrink-0">
                               <button
                                 onClick={() => updateOrderStatus(order.id, "approved")}
-                                className="flex items-center space-x-1 bg-green-500 hover:bg-green-600 text-white px-3 py-1 rounded text-sm transition-colors"
+                                className="flex items-center justify-center space-x-1 bg-green-500 hover:bg-green-600 text-white px-2 sm:px-3 py-1.5 sm:py-2 rounded text-xs sm:text-sm transition-colors flex-1 sm:flex-none"
                               >
-                                <Check className="w-4 h-4" />
-                                <span>Approve</span>
+                                <Check className="w-3 h-3 sm:w-4 sm:h-4" />
+                                <span className="hidden sm:inline">Approve</span>
                               </button>
                               <button
                                 onClick={() => updateOrderStatus(order.id, "rejected")}
-                                className="flex items-center space-x-1 bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded text-sm transition-colors"
+                                className="flex items-center justify-center space-x-1 bg-red-500 hover:bg-red-600 text-white px-2 sm:px-3 py-1.5 sm:py-2 rounded text-xs sm:text-sm transition-colors flex-1 sm:flex-none"
                               >
-                                <X className="w-4 h-4" />
-                                <span>Reject</span>
+                                <X className="w-3 h-3 sm:w-4 sm:h-4" />
+                                <span className="hidden sm:inline">Reject</span>
                               </button>
                             </div>
                           )}
@@ -572,69 +593,78 @@ export default function AdminDashboard() {
               </div>
             ) : (
               <div>
-                <div className="flex items-center justify-between mb-6">
-                  <h2 className="text-2xl font-semibold text-[#1B1B1B]">Products Management</h2>
-                  <button onClick={() => openProductModal()} className="btn-primary flex items-center space-x-2">
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-4 sm:mb-6 space-y-3 sm:space-y-0">
+                  <h2 className="text-xl sm:text-2xl font-semibold text-[#1B1B1B]">Products Management</h2>
+                  <button 
+                    onClick={() => openProductModal()} 
+                    className="btn-primary flex items-center justify-center space-x-2 w-full sm:w-auto px-4 py-2 text-sm sm:text-base"
+                  >
                     <Plus className="w-4 h-4" />
                     <span>Add Product</span>
                   </button>
                 </div>
 
                 {products.length === 0 ? (
-                  <div className="text-center py-12">
-                    <Package className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-                    <p className="text-gray-600">No products yet</p>
+                  <div className="text-center py-8 sm:py-12">
+                    <Package className="w-8 h-8 sm:w-12 sm:h-12 text-gray-400 mx-auto mb-4" />
+                    <p className="text-sm sm:text-base text-gray-600">No products yet</p>
                   </div>
                 ) : (
-                  <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6">
                     {products.map((product) => (
-                      <div key={product.id} className="border border-gray-200 rounded-lg overflow-hidden">
-                        <ProductImage
-                          src={product.image_url}
-                          alt={product.name}
-                          className="w-full h-48 object-cover"
-                          width={300}
-                          height={192}
-                        />
-                        <div className="p-4">
-                          <div className="flex items-center justify-between mb-2">
-                            <h3 className="font-semibold text-[#1B1B1B]">{product.name}</h3>
-                            {product.is_on_sale && (
-                              <span className="bg-red-500 text-white px-2 py-1 rounded-full text-xs font-semibold">
-                                ON SALE
-                              </span>
-                            )}
+                      <div key={product.id} className="border border-gray-200 rounded-lg overflow-hidden hover:shadow-lg transition-shadow bg-white">
+                        <div className="relative">
+                          <ProductImage
+                            src={product.image_url}
+                            alt={product.name}
+                            className="w-full h-40 sm:h-48 object-cover"
+                            width={300}
+                            height={192}
+                          />
+                          {product.is_on_sale && (
+                            <span className="absolute top-2 right-2 bg-red-500 text-white px-2 py-1 rounded-full text-xs font-semibold">
+                              ON SALE
+                            </span>
+                          )}
+                        </div>
+                        <div className="p-3 sm:p-4">
+                          <div className="mb-2">
+                            <h3 className="font-semibold text-[#1B1B1B] text-sm sm:text-base truncate" title={product.name}>
+                              {product.name}
+                            </h3>
                           </div>
-                          <p className="text-sm text-gray-600 mb-2">{product.description}</p>
-                          <div className="mb-4">
+                          <p className="text-xs sm:text-sm text-gray-600 mb-3 line-clamp-2" title={product.description || ''}>
+                            {product.description}
+                          </p>
+                          <div className="mb-3 sm:mb-4">
                             {product.is_on_sale && product.sale_price ? (
-                              <div className="flex items-center space-x-2">
-                                <span className="text-sm text-gray-500 line-through">PKR {product.price}</span>
-                                <span className="text-lg font-bold text-[#1F8D9D]">PKR {product.sale_price}</span>
+                              <div className="flex flex-col sm:flex-row sm:items-center space-y-1 sm:space-y-0 sm:space-x-2">
+                                <span className="text-xs sm:text-sm text-gray-500 line-through">PKR {product.price}</span>
+                                <span className="text-base sm:text-lg font-bold text-[#1F8D9D]">PKR {product.sale_price}</span>
                                 {product.sale_percentage && (
-                                  <span className="text-xs bg-red-100 text-red-800 px-2 py-1 rounded">
+                                  <span className="text-xs bg-red-100 text-red-800 px-2 py-1 rounded self-start">
                                     -{product.sale_percentage}%
                                   </span>
                                 )}
                               </div>
                             ) : (
-                              <p className="text-lg font-bold text-[#1F8D9D]">PKR {product.price}</p>
+                              <p className="text-base sm:text-lg font-bold text-[#1F8D9D]">PKR {product.price}</p>
                             )}
                           </div>
 
-                          <div className="flex space-x-2">
+                          <div className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-2">
                             <button
                               onClick={() => openProductModal(product)}
-                              className="flex items-center space-x-1 bg-[#1F8D9D] hover:bg-[#1F8D9D]/90 text-white px-3 py-1 rounded text-sm transition-colors"
+                              className="flex items-center justify-center space-x-1 bg-[#1F8D9D] hover:bg-[#1F8D9D]/90 text-white px-3 py-2 rounded text-xs sm:text-sm transition-colors flex-1"
                             >
-                              <Edit className="w-4 h-4" />
+                              <Edit className="w-3 h-3 sm:w-4 sm:h-4" />
                               <span>Edit</span>
                             </button>
                             <button
                               onClick={() => openDeleteModal(product)}
-                              className="flex items-center space-x-1 bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded text-sm transition-colors"
+                              className="flex items-center justify-center space-x-1 bg-red-500 hover:bg-red-600 text-white px-3 py-2 rounded text-xs sm:text-sm transition-colors flex-1"
                             >
-                              <Trash2 className="w-4 h-4" />
+                              <Trash2 className="w-3 h-3 sm:w-4 sm:h-4" />
                               <span>Delete</span>
                             </button>
                           </div>
@@ -651,24 +681,24 @@ export default function AdminDashboard() {
 
       {/* Product Modal */}
       {showProductModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-2xl max-w-md w-full max-h-[90vh] flex flex-col">
-            <div className="flex items-center justify-between p-6 pb-4 border-b border-gray-200 flex-shrink-0">
-              <h3 className="text-2xl font-semibold text-[#1B1B1B]">
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-2 sm:p-4 z-50">
+          <div className="bg-white rounded-xl sm:rounded-2xl max-w-md w-full max-h-[95vh] sm:max-h-[90vh] flex flex-col mx-2 sm:mx-0">
+            <div className="flex items-center justify-between p-4 sm:p-6 pb-3 sm:pb-4 border-b border-gray-200 flex-shrink-0">
+              <h3 className="text-lg sm:text-2xl font-semibold text-[#1B1B1B]">
                 {editingProduct ? "Edit Product" : "Add New Product"}
               </h3>
               <button
                 onClick={() => setShowProductModal(false)}
-                className="text-gray-400 hover:text-gray-600"
+                className="text-gray-400 hover:text-gray-600 p-1"
                 aria-label="Close modal"
                 title="Close modal"
               >
-                <X className="w-6 h-6" />
+                <X className="w-5 h-5 sm:w-6 sm:h-6" />
               </button>
             </div>
 
-            <div className="flex-1 overflow-y-auto px-6 py-4">
-              <form onSubmit={handleProductSubmit} className="space-y-4">
+            <div className="flex-1 overflow-y-auto px-4 sm:px-6 py-3 sm:py-4">
+              <form onSubmit={handleProductSubmit} className="space-y-3 sm:space-y-4">
                 {/* Error Messages */}
                 {submitError && (
                   <div className={`border rounded-lg p-3 flex items-center space-x-2 ${
@@ -716,36 +746,36 @@ export default function AdminDashboard() {
                   </div>
                 )}
               <div>
-                <label className="block text-sm font-medium text-[#1B1B1B] mb-2">Product Name</label>
+                <label className="block text-xs sm:text-sm font-medium text-[#1B1B1B] mb-1 sm:mb-2">Product Name</label>
                 <input
                   type="text"
                   required
                   value={productForm.name}
                   onChange={(e) => setProductForm({ ...productForm, name: e.target.value })}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#1F8D9D] focus:border-transparent"
+                  className="w-full px-3 sm:px-4 py-2 sm:py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#1F8D9D] focus:border-transparent text-sm sm:text-base"
                   placeholder="Enter product name"
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-[#1B1B1B] mb-2">Price (PKR)</label>
+                <label className="block text-xs sm:text-sm font-medium text-[#1B1B1B] mb-1 sm:mb-2">Price (PKR)</label>
                 <input
                   type="number"
                   step="0.01"
                   required
                   value={productForm.price}
                   onChange={(e) => setProductForm({ ...productForm, price: e.target.value })}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#1F8D9D] focus:border-transparent"
+                  className="w-full px-3 sm:px-4 py-2 sm:py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#1F8D9D] focus:border-transparent text-sm sm:text-base"
                   placeholder="Enter price in PKR"
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-[#1B1B1B] mb-2">Description</label>
+                <label className="block text-xs sm:text-sm font-medium text-[#1B1B1B] mb-1 sm:mb-2">Description</label>
                 <textarea
                   value={productForm.description}
                   onChange={(e) => setProductForm({ ...productForm, description: e.target.value })}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#1F8D9D] focus:border-transparent"
+                  className="w-full px-3 sm:px-4 py-2 sm:py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#1F8D9D] focus:border-transparent text-sm sm:text-base resize-none"
                   placeholder="Enter product description"
                   rows={3}
                 />
@@ -753,19 +783,19 @@ export default function AdminDashboard() {
 
               {/* Image Upload */}
               <div>
-                <label className="block text-sm font-medium text-[#1B1B1B] mb-2">
+                <label className="block text-xs sm:text-sm font-medium text-[#1B1B1B] mb-1 sm:mb-2">
                   Upload Product Image
                 </label>
                 <input
                   type="file"
                   accept="image/*"
                   onChange={(e) => handleImageFiles(e.target.files)}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#1F8D9D] focus:border-transparent"
+                  className="w-full px-3 sm:px-4 py-2 sm:py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#1F8D9D] focus:border-transparent text-sm"
                   aria-label="Upload product image"
                   title="Select product image"
                 />
                 <p className="text-xs text-gray-500 mt-1">
-                  Select an image (max 5MB). Supported formats: JPG, PNG, WebP
+                  Max 5MB. Formats: JPG, PNG, WebP
                 </p>
                 
                 {/* Preview new image */}
@@ -817,8 +847,8 @@ export default function AdminDashboard() {
               </div>
 
               {/* Sale Settings */}
-              <div className="space-y-4 pt-4 border-t border-gray-200">
-                <h4 className="text-lg font-medium text-[#1B1B1B]">Sale Settings</h4>
+              <div className="space-y-3 sm:space-y-4 pt-3 sm:pt-4 border-t border-gray-200">
+                <h4 className="text-base sm:text-lg font-medium text-[#1B1B1B]">Sale Settings</h4>
                 
                 <div className="flex items-center space-x-3">
                   <input
@@ -828,15 +858,15 @@ export default function AdminDashboard() {
                     onChange={(e) => setProductForm({ ...productForm, is_on_sale: e.target.checked })}
                     className="w-4 h-4 text-[#1F8D9D] bg-gray-100 border-gray-300 rounded focus:ring-[#1F8D9D] focus:ring-2"
                   />
-                  <label htmlFor="is_on_sale" className="text-sm font-medium text-[#1B1B1B]">
+                  <label htmlFor="is_on_sale" className="text-xs sm:text-sm font-medium text-[#1B1B1B]">
                     Put this product on sale
                   </label>
                 </div>
 
                 {productForm.is_on_sale && (
-                  <div className="grid grid-cols-2 gap-4 ml-7">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 ml-0 sm:ml-7">
                     <div>
-                      <label className="block text-sm font-medium text-[#1B1B1B] mb-2">Sale Price (PKR)</label>
+                      <label className="block text-xs sm:text-sm font-medium text-[#1B1B1B] mb-1 sm:mb-2">Sale Price (PKR)</label>
                       <input
                         type="number"
                         step="0.01"
@@ -856,7 +886,7 @@ export default function AdminDashboard() {
                       />
                     </div>
                     <div>
-                      <label className="block text-sm font-medium text-[#1B1B1B] mb-2">Discount %</label>
+                      <label className="block text-xs sm:text-sm font-medium text-[#1B1B1B] mb-1 sm:mb-2">Discount %</label>
                       <input
                         type="number"
                         min="1"
@@ -880,11 +910,11 @@ export default function AdminDashboard() {
                 )}
               </div>
 
-                <div className="pt-4 border-t border-gray-200 mt-6">
+                <div className="pt-3 sm:pt-4 border-t border-gray-200 mt-4 sm:mt-6">
                   <button
                     type="submit"
                     disabled={uploadingImages}
-                    className="w-full btn-primary py-3 disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="w-full btn-primary py-2.5 sm:py-3 disabled:opacity-50 disabled:cursor-not-allowed text-sm sm:text-base"
                   >
                     {uploadingImages ? (
                       <div className="flex items-center justify-center space-x-2">
