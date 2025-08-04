@@ -3,9 +3,16 @@
 import { motion } from "framer-motion"
 import { FaWhatsapp } from "react-icons/fa"
 import { useState } from "react"
+import { usePathname } from "next/navigation"
 
 export default function WhatsAppFloat() {
   const [isHovered, setIsHovered] = useState(false)
+  const pathname = usePathname()
+  
+  // Only show WhatsApp float on home page
+  if (pathname !== '/') {
+    return null
+  }
   
   // Get WhatsApp number directly from environment variable
   const whatsappNumber = process.env.NEXT_PUBLIC_WHATSAPP_NUMBER || "923241715470"
