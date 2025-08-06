@@ -31,6 +31,7 @@ interface Product {
 interface Order {
   id: string
   customer_name: string
+  customer_email: string
   address: string
   phone: string
   status: "pending" | "approved" | "rejected"
@@ -150,7 +151,8 @@ export default function AdminDashboard() {
       // Send email notification to customer
       try {
         const product = orderDetails.products
-        const customerEmail = orderDetails.users?.email
+        // Use customer_email from order (works for both guest and authenticated users)
+        const customerEmail = orderDetails.customer_email || orderDetails.users?.email
         const totalAmount = (product.is_on_sale && product.sale_price 
           ? product.sale_price 
           : product.price) * orderDetails.quantity

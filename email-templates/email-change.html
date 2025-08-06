@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ZEENE - Confirm Email Change</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: 'Arial', sans-serif;
+            background-color: #f9f9f9;
+            line-height: 1.6;
+        }
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            background-color: #ffffff;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+        }
+        .header {
+            background: linear-gradient(135deg, #1F8D9D 0%, #3E7346 100%);
+            padding: 40px 20px;
+            text-align: center;
+            color: white;
+        }
+        .logo {
+            font-size: 32px;
+            font-weight: bold;
+            margin-bottom: 10px;
+            letter-spacing: 2px;
+        }
+        .tagline {
+            font-size: 16px;
+            opacity: 0.9;
+            margin: 0;
+        }
+        .content {
+            padding: 40px 30px;
+            text-align: center;
+        }
+        .title {
+            color: #1B1B1B;
+            font-size: 28px;
+            font-weight: bold;
+            margin-bottom: 20px;
+        }
+        .text {
+            color: #666;
+            font-size: 16px;
+            margin-bottom: 20px;
+            line-height: 1.6;
+        }
+        .confirm-button {
+            display: inline-block;
+            background: linear-gradient(135deg, #1F8D9D 0%, #3E7346 100%);
+            color: white;
+            text-decoration: none;
+            padding: 16px 40px;
+            border-radius: 50px;
+            font-weight: bold;
+            font-size: 16px;
+            margin: 20px 0;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(31, 141, 157, 0.3);
+        }
+        .confirm-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(31, 141, 157, 0.4);
+        }
+        .email-info {
+            background-color: #e8f4f8;
+            border: 1px solid #b8e6f0;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 30px 0;
+            text-align: left;
+        }
+        .email-info h3 {
+            color: #1F8D9D;
+            margin-top: 0;
+            font-size: 18px;
+        }
+        .email-info p {
+            color: #0c5460;
+            margin: 10px 0;
+            font-size: 14px;
+        }
+        .footer {
+            background-color: #1B1B1B;
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+        .footer-title {
+            color: #FDBA2D;
+            font-size: 18px;
+            font-weight: bold;
+            margin-bottom: 15px;
+        }
+        .contact-info {
+            margin: 15px 0;
+        }
+        .contact-info a {
+            color: #1F8D9D;
+            text-decoration: none;
+        }
+        .social-links {
+            margin-top: 20px;
+        }
+        .social-links a {
+            color: #1F8D9D;
+            text-decoration: none;
+            margin: 0 10px;
+        }
+        .disclaimer {
+            font-size: 12px;
+            color: #999;
+            margin-top: 20px;
+            padding-top: 20px;
+            border-top: 1px solid #333;
+        }
+        @media (max-width: 600px) {
+            .container {
+                margin: 10px;
+                border-radius: 8px;
+            }
+            .content {
+                padding: 30px 20px;
+            }
+            .title {
+                font-size: 24px;
+            }
+            .confirm-button {
+                padding: 14px 30px;
+                font-size: 14px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <div class="header">
+            <div class="logo">ZEENE</div>
+            <p class="tagline">Healthy Hair Starts Here</p>
+        </div>
+
+        <!-- Main Content -->
+        <div class="content">
+            <h1 class="title">📧 Confirm Email Change</h1>
+            
+            <p class="text">
+                We received a request to change the email address associated with your ZEENE account. To complete this change, please confirm your new email address.
+            </p>
+
+            <a href="{{ .ConfirmationURL }}" class="confirm-button">
+                ✅ Confirm New Email
+            </a>
+
+            <!-- Email Change Info -->
+            <div class="email-info">
+                <h3>📝 What This Means</h3>
+                <p>• Your new email address will be used for all future communications</p>
+                <p>• You'll use this email to sign in to your ZEENE account</p>
+                <p>• Order confirmations and updates will be sent to this address</p>
+                <p>• This change will take effect immediately after confirmation</p>
+            </div>
+
+            <p style="color: #999; font-size: 14px; margin-top: 30px;">
+                If the button doesn't work, copy and paste this link into your browser:<br>
+                <span style="word-break: break-all; color: #1F8D9D;">{{ .ConfirmationURL }}</span>
+            </p>
+
+            <p class="text" style="margin-top: 30px; color: #dc3545;">
+                <strong>⚠️ Important:</strong> If you didn't request this email change, please contact our support team immediately to secure your account.
+            </p>
+        </div>
+
+        <!-- Footer -->
+        <div class="footer">
+            <div class="footer-title">ZEENE Hair Oil</div>
+            
+            <div class="contact-info">
+                <p>📧 Email: <a href="mailto:zeene.contact@gmail.com">zeene.contact@gmail.com</a></p>
+                <p>📱 WhatsApp: <a href="https://wa.me/923241715470">+92 324 1715470</a></p>
+            </div>
+
+            <div class="social-links">
+                <a href="https://www.instagram.com/zeene.store">📸 Instagram</a>
+                <a href="https://zeene.store">🌐 Website</a>
+            </div>
+
+            <div class="disclaimer">
+                <p>This email was sent to confirm a change to your ZEENE account email address.</p>
+                <p>If you didn't request this change, please contact support immediately.</p>
+                <p>&copy; 2024 ZEENE Hair Oil. All rights reserved.</p>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

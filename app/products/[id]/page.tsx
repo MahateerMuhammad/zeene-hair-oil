@@ -29,6 +29,7 @@ interface Product {
 
 interface OrderFormData {
   customer_name: string
+  guest_email?: string
   address: string
   phone: string
   quantity: number
@@ -41,6 +42,7 @@ export default function ProductDetailPage() {
   const [loading, setLoading] = useState(true)
   const [showOrderModal, setShowOrderModal] = useState(false)
   const [customerName, setCustomerName] = useState("")
+  const [guestEmail, setGuestEmail] = useState("")
   const [address, setAddress] = useState("")
   const [phone, setPhone] = useState("")
   const [quantity, setQuantity] = useState(1)
@@ -63,6 +65,11 @@ export default function ProductDetailPage() {
         if (value.trim().length > 50) return 'Name must be less than 50 characters'
         if (!/^[a-zA-Z\s]+$/.test(value.trim())) return 'Name can only contain letters and spaces'
         return null
+      case 'guest_email':
+        if (typeof value !== 'string') return null
+        if (value.trim().length === 0) return 'Email is required for guest orders'
+        if (!validateEmail(value.trim())) return 'Please enter a valid email address'
+        return null
       case 'address':
         if (typeof value !== 'string') return null
         if (value.trim().length < 10) return 'Address must be at least 10 characters'
@@ -83,6 +90,11 @@ export default function ProductDetailPage() {
     if (field === 'customer_name' && typeof value === 'string') {
       setCustomerName(value)
       // Clear error when user starts typing
+      if (formErrors[field]) {
+        setFormErrors(prev => ({ ...prev, [field]: '' }))
+      }
+    } else if (field === 'guest_email' && typeof value === 'string') {
+      setGuestEmail(value)
       if (formErrors[field]) {
         setFormErrors(prev => ({ ...prev, [field]: '' }))
       }
@@ -125,13 +137,9 @@ export default function ProductDetailPage() {
     }
   }
 
-  const [showAuthModal, setShowAuthModal] = useState(false)
+
 
   const handleOrderNow = () => {
-    if (!user) {
-      setShowAuthModal(true)
-      return
-    }
     setShowOrderModal(true)
   }
 
@@ -142,6 +150,7 @@ export default function ProductDetailPage() {
     setOrderError(null)
     setOrderSuccess(false)
     setCustomerName("")
+    setGuestEmail("")
     setAddress("")
     setPhone("")
     setQuantity(1)
@@ -149,14 +158,15 @@ export default function ProductDetailPage() {
 
   const handleOrderSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!product || !user) return
+    if (!product) return
 
     // Clear previous errors
     setFormErrors({})
     setOrderError(null)
 
-    // Rate limiting check
-    if (!checkRateLimit(user.id, 5, 60000)) {
+    // Rate limiting check - use user ID if logged in, or IP-based for guests
+    const rateLimitKey = user ? user.id : 'guest'
+    if (!checkRateLimit(rateLimitKey, 5, 60000)) {
       setOrderError("Too many requests. Please wait a minute before trying again.")
       return
     }
@@ -166,6 +176,12 @@ export default function ProductDetailPage() {
     
     const nameError = validateField('customer_name', customerName)
     if (nameError) errors.customer_name = nameError
+
+    // Validate guest email if user is not logged in
+    if (!user) {
+      const emailError = validateField('guest_email', guestEmail)
+      if (emailError) errors.guest_email = emailError
+    }
 
     const addressError = validateField('address', address)
     if (addressError) errors.address = addressError
@@ -177,9 +193,14 @@ export default function ProductDetailPage() {
       errors.quantity = "Quantity must be between 1 and 100"
     }
 
-    if (!validateEmail(user.email || '')) {
-      setOrderError("Invalid user email. Please contact support.")
-      return
+    // Validate email based on user status
+    const emailToValidate = user ? user.email || '' : guestEmail
+    if (!validateEmail(emailToValidate)) {
+      if (user) {
+        setOrderError("Invalid user email. Please contact support.")
+      } else {
+        errors.guest_email = "Please enter a valid email address"
+      }
     }
 
     // If there are validation errors, show them and return
@@ -195,37 +216,44 @@ export default function ProductDetailPage() {
 
     setOrderLoading(true)
     try {
-      // First, ensure the user exists in the users table
-      const { data: userData, error: userError } = await supabase
-        .from("users")
-        .select("id, role")
-        .eq("id", user.id)
-        .single()
-
-      if (userError && userError.code === 'PGRST116') {
-        // User doesn't exist in users table, create them
-        const { error: insertUserError } = await supabase
+      let userId = null
+      
+      // Handle user verification for logged-in users
+      if (user) {
+        const { data: userData, error: userError } = await supabase
           .from("users")
-          .insert({
-            id: user.id,
-            email: user.email,
-            role: 'user'
-          })
+          .select("id, role")
+          .eq("id", user.id)
+          .single()
 
-        if (insertUserError) {
-          console.error("Error creating user record:", insertUserError)
-          throw new Error("Failed to create user record. Please try again.")
+        if (userError && userError.code === 'PGRST116') {
+          // User doesn't exist in users table, create them
+          const { error: insertUserError } = await supabase
+            .from("users")
+            .insert({
+              id: user.id,
+              email: user.email,
+              role: 'user'
+            })
+
+          if (insertUserError) {
+            console.error("Error creating user record:", insertUserError)
+            throw new Error("Failed to create user record. Please try again.")
+          }
+        } else if (userError) {
+          console.error("Error checking user:", userError)
+          throw new Error("User verification failed. Please try again.")
         }
-      } else if (userError) {
-        console.error("Error checking user:", userError)
-        throw new Error("User verification failed. Please try again.")
+        
+        userId = user.id
       }
 
-      // Now insert the order
+      // Insert the order (user_id will be null for guest orders)
       const { data: orderData, error } = await supabase.from("orders").insert({
-        user_id: user.id,
+        user_id: userId,
         product_id: product.id,
         customer_name: sanitizedName,
+        customer_email: user ? user.email : guestEmail, // Store email for both guest and authenticated users
         address: sanitizedAddress,
         phone: sanitizedPhone,
         quantity: quantity,
@@ -233,8 +261,9 @@ export default function ProductDetailPage() {
       }).select().single()
 
       if (error) {
-        console.error("Database error details:", error)
-        throw error
+        // Create a more descriptive error for debugging
+        const errorMessage = `Database error: ${error.message || 'Unknown error'}`
+        throw new Error(errorMessage)
       }
 
       // Send email notification to admin
@@ -242,6 +271,9 @@ export default function ProductDetailPage() {
         const totalAmount = (product.is_on_sale && product.sale_price 
           ? product.sale_price 
           : product.price) * quantity
+
+        // Use user email if logged in, otherwise use guest email
+        const customerEmail = user ? user.email : guestEmail
 
         await fetch('/api/send-order-email', {
           method: 'POST',
@@ -252,7 +284,7 @@ export default function ProductDetailPage() {
             type: 'new_order',
             orderId: orderData.id,
             customerName: sanitizedName,
-            customerEmail: user.email,
+            customerEmail: customerEmail,
             customerPhone: sanitizedPhone,
             customerAddress: sanitizedAddress,
             productName: product.name,
@@ -264,8 +296,7 @@ export default function ProductDetailPage() {
           })
         })
       } catch (emailError) {
-        console.error("Failed to send email notification:", emailError)
-        // Don't fail the order if email fails
+        // Don't fail the order if email fails - email is not critical
       }
 
       setOrderSuccess(true)
@@ -273,8 +304,6 @@ export default function ProductDetailPage() {
         closeOrderModal()
       }, 3000)
     } catch (error) {
-      console.error("Error placing order:", error)
-      
       // Provide more specific error messages
       let errorMessage = "Failed to place order. Please try again."
       
@@ -283,8 +312,10 @@ export default function ProductDetailPage() {
           errorMessage = "Account setup issue. Please log out and log back in, then try again."
         } else if (error.message.includes("verification failed")) {
           errorMessage = "Account verification failed. Please contact support."
-        } else if (error.message.includes("permission")) {
-          errorMessage = "Permission denied. Please ensure you're logged in properly."
+        } else if (error.message.includes("permission") || error.message.includes("policy")) {
+          errorMessage = "Permission denied. There may be a database configuration issue."
+        } else if (error.message.includes("Database error:")) {
+          errorMessage = `Order submission failed: ${error.message}`
         }
       }
       
@@ -935,7 +966,7 @@ export default function ProductDetailPage() {
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: 0.7 }}
                   >
-                    Your order has been submitted and is pending approval. We'll contact you soon!
+                    Your order has been submitted and is pending approval. We'll send you an email update soon!
                   </motion.p>
                 </motion.div>
               ) : (
@@ -950,12 +981,14 @@ export default function ProductDetailPage() {
                       <span className="text-sm font-medium text-blue-800">Form Completion</span>
                       <span className="text-sm text-blue-600">
                         {(() => {
-                          const fields = ['customer_name', 'address', 'phone']
+                          const fields = user ? ['customer_name', 'address', 'phone'] : ['customer_name', 'guest_email', 'address', 'phone']
                           const completed = fields.filter(field => {
-                            const value = field === 'customer_name' ? customerName : field === 'address' ? address : phone
+                            const value = field === 'customer_name' ? customerName : 
+                                         field === 'guest_email' ? guestEmail :
+                                         field === 'address' ? address : phone
                             return value.trim().length > 0 && !formErrors[field]
                           }).length
-                          return `${completed}/3 fields completed`
+                          return `${completed}/${fields.length} fields completed`
                         })()}
                       </span>
                     </div>
@@ -964,12 +997,14 @@ export default function ProductDetailPage() {
                         initial={{ width: 0 }}
                         animate={{ 
                           width: `${(() => {
-                            const fields = ['customer_name', 'address', 'phone']
+                            const fields = user ? ['customer_name', 'address', 'phone'] : ['customer_name', 'guest_email', 'address', 'phone']
                             const completed = fields.filter(field => {
-                              const value = field === 'customer_name' ? customerName : field === 'address' ? address : phone
+                              const value = field === 'customer_name' ? customerName : 
+                                           field === 'guest_email' ? guestEmail :
+                                           field === 'address' ? address : phone
                               return value.trim().length > 0 && !formErrors[field]
                             }).length
-                            return (completed / 3) * 100
+                            return (completed / fields.length) * 100
                           })()}%`
                         }}
                         transition={{ duration: 0.3 }}
@@ -1175,10 +1210,74 @@ export default function ProductDetailPage() {
                     )}
                   </motion.div>
 
+                  {/* Guest Email Field - Only show for non-logged-in users */}
+                  {!user && (
+                    <motion.div
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: 0.15 }}
+                    >
+                      <div className="flex justify-between items-center mb-2">
+                        <label className="block text-sm font-medium text-[#1B1B1B]">Email Address</label>
+                        <span className="text-xs text-gray-400">For order updates</span>
+                      </div>
+                      <div className="relative">
+                        <svg className={`absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 transition-colors duration-300 ${
+                          formErrors.guest_email ? 'text-red-400' : 
+                          guestEmail.length > 0 ? 'text-[#1F8D9D]' : 'text-gray-400'
+                        }`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 12a4 4 0 10-8 0 4 4 0 008 0zm0 0v1.5a2.5 2.5 0 005 0V12a9 9 0 10-9 9m4.5-1.206a8.959 8.959 0 01-4.5 1.207" />
+                        </svg>
+                        <input
+                          type="email"
+                          required
+                          disabled={orderLoading}
+                          value={guestEmail}
+                          onChange={(e) => handleFieldChange('guest_email', e.target.value)}
+                          onBlur={(e) => {
+                            const error = validateField('guest_email', e.target.value)
+                            if (error) {
+                              setFormErrors(prev => ({ ...prev, guest_email: error }))
+                            }
+                          }}
+                          className={`w-full pl-12 pr-4 py-4 border rounded-xl focus:ring-2 transition-all duration-300 ${
+                            orderLoading 
+                              ? 'bg-gray-100 cursor-not-allowed border-gray-200'
+                              : formErrors.guest_email 
+                              ? 'border-red-300 bg-red-50 focus:ring-red-200' 
+                              : guestEmail.length > 0
+                              ? 'border-[#1F8D9D] bg-blue-50 focus:ring-[#1F8D9D] focus:border-transparent'
+                              : 'border-gray-200 focus:ring-[#1F8D9D] focus:border-transparent'
+                          }`}
+                          placeholder="Enter your email address (e.g., john@example.com)"
+                        />
+                        {guestEmail.length > 0 && !formErrors.guest_email && validateEmail(guestEmail) && (
+                          <div className="absolute right-4 top-1/2 transform -translate-y-1/2">
+                            <div className="w-5 h-5 bg-green-500 rounded-full flex items-center justify-center">
+                              <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                              </svg>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                      {formErrors.guest_email && (
+                        <motion.p
+                          initial={{ opacity: 0, y: -10 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          className="mt-2 text-sm text-red-600 flex items-center bg-red-50 p-2 rounded-lg"
+                        >
+                          <AlertCircle className="w-4 h-4 mr-2 flex-shrink-0" />
+                          {formErrors.guest_email}
+                        </motion.p>
+                      )}
+                    </motion.div>
+                  )}
+
                   <motion.div
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.2 }}
+                    transition={{ delay: user ? 0.2 : 0.25 }}
                   >
                     <div className="flex justify-between items-center mb-2">
                       <label className="block text-sm font-medium text-[#1B1B1B]">Delivery Address</label>
@@ -1255,7 +1354,7 @@ export default function ProductDetailPage() {
                   <motion.div
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.3 }}
+                    transition={{ delay: user ? 0.3 : 0.35 }}
                   >
                     <div className="flex justify-between items-center mb-2">
                       <label className="block text-sm font-medium text-[#1B1B1B]">Phone Number</label>
@@ -1345,56 +1444,7 @@ export default function ProductDetailPage() {
         </motion.div>
       )}
 
-      {/* Authentication Modal */}
-      {showAuthModal && (
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50"
-        >
-          <motion.div
-            initial={{ scale: 0.9, opacity: 0 }}
-            animate={{ scale: 1, opacity: 1 }}
-            className="bg-white rounded-xl sm:rounded-2xl max-w-md w-full p-6 sm:p-8 text-center"
-          >
-            <div className="w-12 h-12 sm:w-16 sm:h-16 bg-[#1F8D9D]/10 rounded-full flex items-center justify-center mx-auto mb-4">
-              <AlertCircle className="w-6 h-6 sm:w-8 sm:h-8 text-[#1F8D9D]" />
-            </div>
-            
-            <h3 className="text-xl sm:text-2xl font-semibold text-[#1B1B1B] mb-3 sm:mb-4">
-              Authentication Required
-            </h3>
-            
-            <p className="text-sm sm:text-base text-gray-600 mb-6">
-              Please log in to your account to place an order for this premium hair oil product.
-            </p>
 
-            <div className="flex flex-col gap-3">
-              <Link
-                href="/login"
-                className="flex items-center justify-center space-x-2 px-6 py-3 bg-[#1F8D9D] text-white rounded-lg hover:bg-[#186F7B] transition-colors duration-300"
-              >
-                <LogIn className="w-4 h-4" />
-                <span>Log In</span>
-              </Link>
-              
-              <Link
-                href="/signup"
-                className="px-6 py-3 bg-[#FDBA2D] text-[#1B1B1B] rounded-lg hover:bg-[#FDBA2D]/90 transition-colors duration-300"
-              >
-                Sign Up
-              </Link>
-              
-              <button
-                onClick={() => setShowAuthModal(false)}
-                className="px-6 py-3 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors duration-300"
-              >
-                Cancel
-              </button>
-            </div>
-          </motion.div>
-        </motion.div>
-      )}
       </div>
     </ErrorBoundary>
   )
