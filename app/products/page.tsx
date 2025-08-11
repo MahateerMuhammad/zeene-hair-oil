@@ -28,6 +28,7 @@ interface Product {
 
 interface OrderFormData {
   customer_name: string
+  guest_email?: string
   address: string
   phone: string
   quantity: number
@@ -35,6 +36,7 @@ interface OrderFormData {
 
 interface FormErrors {
   customer_name?: string
+  guest_email?: string
   address?: string
   phone?: string
 }
@@ -50,6 +52,7 @@ export default function ProductsPage() {
   const [favorites, setFavorites] = useState<Set<string>>(new Set())
   const [orderForm, setOrderForm] = useState<OrderFormData>({
     customer_name: "",
+    guest_email: "",
     address: "",
     phone: "",
     quantity: 1,
@@ -80,7 +83,7 @@ export default function ProductsPage() {
       }, 100)
     } else {
       // Reset form when modal closes
-      setOrderForm({ customer_name: "", address: "", phone: "", quantity: 1 })
+      setOrderForm({ customer_name: "", guest_email: "", address: "", phone: "", quantity: 1 })
       setFormErrors({})
       setOrderError(null)
       setOrderSuccess(false)
@@ -151,27 +154,25 @@ export default function ProductsPage() {
     }
   }
 
-  const [showAuthModal, setShowAuthModal] = useState(false)
+
 
   const handleOrderNow = (product: Product) => {
-    if (!user) {
-      setShowAuthModal(true)
-      return
-    }
     setSelectedProduct(product)
     setShowOrderModal(true)
   }
 
   const [orderError, setOrderError] = useState<string | null>(null)
 
-  // Enhanced validation function with detailed error messages
+  // Simplified validation function
   const validateField = (field: keyof FormErrors, value: string): string | undefined => {
     if (!value || value.trim().length === 0) {
       switch (field) {
         case 'customer_name':
-          return "Full name is required"
+          return "Name is required"
+        case 'guest_email':
+          return "Email is required"
         case 'address':
-          return "Delivery address is required"
+          return "Address is required"
         case 'phone':
           return "Phone number is required"
       }
@@ -182,69 +183,40 @@ export default function ProductsPage() {
     switch (field) {
       case 'customer_name':
         if (trimmedValue.length < 2) {
-          return "Name must be at least 2 characters long"
+          return "Name must be at least 2 characters"
         }
-        if (trimmedValue.length > 50) {
-          return "Name cannot exceed 50 characters"
-        }
-        if (!/^[a-zA-Z\s]+$/.test(trimmedValue)) {
-          return "Name can only contain letters and spaces"
-        }
-        if (/^\s|\s$/.test(value)) {
-          return "Name cannot start or end with spaces"
+        break
+        
+      case 'guest_email':
+        if (!validateEmail(trimmedValue)) {
+          return "Please enter a valid email address"
         }
         break
         
       case 'address':
-        if (trimmedValue.length < 10) {
-          return "Address must be at least 10 characters long"
-        }
-        if (trimmedValue.length > 200) {
-          return "Address cannot exceed 200 characters"
-        }
-        if (!/^[a-zA-Z0-9\s,.-]+$/.test(trimmedValue)) {
-          return "Address contains invalid characters"
-        }
-        // Check for meaningful content (not just numbers or single words)
-        const words = trimmedValue.split(/\s+/).filter(word => word.length > 0)
-        if (words.length < 3) {
-          return "Please provide a complete address with street, area, and city"
+        if (trimmedValue.length < 5) {
+          return "Address must be at least 5 characters"
         }
         break
         
       case 'phone':
-        // Remove all non-digit characters for validation
+        // Simple phone validation - just check for digits
         const digitsOnly = trimmedValue.replace(/\D/g, '')
         if (digitsOnly.length < 10) {
           return "Phone number must be at least 10 digits"
-        }
-        if (digitsOnly.length > 15) {
-          return "Phone number cannot exceed 15 digits"
-        }
-        // Check for valid Pakistani phone number patterns
-        if (!/^(\+92|0092|92|0)?[3-9]\d{8,9}$/.test(digitsOnly)) {
-          return "Please enter a valid Pakistani phone number"
         }
         break
     }
     return undefined
   }
 
-  // Handle form field changes with real-time validation
+  // Handle form field changes without real-time validation
   const handleFieldChange = (field: keyof OrderFormData, value: string | number) => {
     setOrderForm(prev => ({ ...prev, [field]: value }))
     
-    // Clear any existing error for this field
+    // Clear any existing error for this field when user starts typing
     if (formErrors[field as keyof FormErrors]) {
       setFormErrors(prev => ({ ...prev, [field]: undefined }))
-    }
-    
-    // Validate on blur (we'll add onBlur handlers)
-    if (typeof value === 'string' && value.length > 0) {
-      const error = validateField(field as keyof FormErrors, value)
-      if (error) {
-        setFormErrors(prev => ({ ...prev, [field]: error }))
-      }
     }
   }
 
@@ -253,15 +225,16 @@ export default function ProductsPage() {
     setOrderError(null)
     setFormErrors({})
     
-    if (!selectedProduct || !user) {
+    if (!selectedProduct) {
       setOrderError("Unable to process order. Please refresh the page and try again.")
       return
     }
 
     try {
-      // Rate limiting check
-      if (!checkRateLimit(user.id, 5, 60000)) {
-        setOrderError("You're placing orders too quickly. Please wait a minute before trying again.")
+      // Rate limiting check - use user ID if logged in, or IP-based for guests
+      const rateLimitKey = user ? user.id : 'guest'
+      if (!checkRateLimit(rateLimitKey, 5, 60000)) {
+        setOrderError("Too many requests. Please wait a minute before trying again.")
         return
       }
 
@@ -277,6 +250,12 @@ export default function ProductsPage() {
       if (addressError) errors.address = addressError
       if (phoneError) errors.phone = phoneError
 
+      // Validate guest email if user is not logged in
+      if (!user) {
+        const emailError = validateField('guest_email', orderForm.guest_email || '')
+        if (emailError) errors.guest_email = emailError
+      }
+
       // Validate quantity
       if (!orderForm.quantity || orderForm.quantity < 1) {
         setOrderError("Please select at least 1 item")
@@ -287,10 +266,14 @@ export default function ProductsPage() {
         return
       }
 
-      // Validate user email
-      if (!user.email || !validateEmail(user.email)) {
-        setOrderError("Your account email is invalid. Please contact support for assistance.")
-        return
+      // Validate email based on user status
+      const emailToValidate = user ? user.email || '' : orderForm.guest_email || ''
+      if (!validateEmail(emailToValidate)) {
+        if (user) {
+          setOrderError("Invalid user email. Please contact support.")
+        } else {
+          errors.guest_email = "Please enter a valid email address"
+        }
       }
 
       // If there are validation errors, show them and stop
@@ -306,23 +289,35 @@ export default function ProductsPage() {
       const sanitizedPhone = sanitizeInput(orderForm.phone)
 
       setOrderLoading(true)
+      
+      // Simple user ID assignment
+      const userId = user ? user.id : null
+
+      // Insert the order (user_id will be null for guest orders)
       const { data: orderData, error } = await supabase.from("orders").insert({
-        user_id: user.id,
+        user_id: userId,
         product_id: selectedProduct.id,
         customer_name: sanitizedName,
+        customer_email: user ? user.email : orderForm.guest_email, // Store email for both guest and authenticated users
         address: sanitizedAddress,
         phone: sanitizedPhone,
         quantity: orderForm.quantity,
         status: "pending",
       }).select().single()
 
-      if (error) throw error
+      if (error) {
+        console.error("Database error:", error)
+        throw new Error("Failed to place order. Please try again.")
+      }
 
       // Send email notification to admin
       try {
         const totalAmount = (selectedProduct.is_on_sale && selectedProduct.sale_price 
           ? selectedProduct.sale_price 
           : selectedProduct.price) * orderForm.quantity
+
+        // Use user email if logged in, otherwise use guest email
+        const customerEmail = user ? user.email : orderForm.guest_email
 
         await fetch('/api/send-order-email', {
           method: 'POST',
@@ -333,7 +328,7 @@ export default function ProductsPage() {
             type: 'new_order',
             orderId: orderData.id,
             customerName: sanitizedName,
-            customerEmail: user.email,
+            customerEmail: customerEmail,
             customerPhone: sanitizedPhone,
             customerAddress: sanitizedAddress,
             productName: selectedProduct.name,
@@ -353,7 +348,7 @@ export default function ProductsPage() {
       setTimeout(() => {
         setShowOrderModal(false)
         setOrderSuccess(false)
-        setOrderForm({ customer_name: "", address: "", phone: "", quantity: 1 })
+        setOrderForm({ customer_name: "", guest_email: "", address: "", phone: "", quantity: 1 })
         setFormErrors({})
         setOrderError(null)
       }, 2000)
@@ -728,14 +723,15 @@ export default function ProductsPage() {
                         <span className="text-sm font-medium text-blue-800">Form Completion</span>
                         <span className="text-sm text-blue-600">
                           {(() => {
-                            const fields = ['customer_name', 'address', 'phone']
-                            const completed = fields.filter(field => 
-                              orderForm[field as keyof OrderFormData] && 
-                              typeof orderForm[field as keyof OrderFormData] === 'string' && 
-                              (orderForm[field as keyof OrderFormData] as string).trim().length > 0 &&
-                              !formErrors[field as keyof FormErrors]
-                            ).length
-                            return `${completed}/3 fields completed`
+                            const fields = user ? ['customer_name', 'address', 'phone'] : ['customer_name', 'guest_email', 'address', 'phone']
+                            const completed = fields.filter(field => {
+                              const value = orderForm[field as keyof OrderFormData]
+                              return value && 
+                                typeof value === 'string' && 
+                                value.trim().length > 0 &&
+                                !formErrors[field as keyof FormErrors]
+                            }).length
+                            return `${completed}/${fields.length} fields completed`
                           })()}
                         </span>
                       </div>
@@ -744,14 +740,15 @@ export default function ProductsPage() {
                           initial={{ width: 0 }}
                           animate={{ 
                             width: `${(() => {
-                              const fields = ['customer_name', 'address', 'phone']
-                              const completed = fields.filter(field => 
-                                orderForm[field as keyof OrderFormData] && 
-                                typeof orderForm[field as keyof OrderFormData] === 'string' && 
-                                (orderForm[field as keyof OrderFormData] as string).trim().length > 0 &&
-                                !formErrors[field as keyof FormErrors]
-                              ).length
-                              return (completed / 3) * 100
+                              const fields = user ? ['customer_name', 'address', 'phone'] : ['customer_name', 'guest_email', 'address', 'phone']
+                              const completed = fields.filter(field => {
+                                const value = orderForm[field as keyof OrderFormData]
+                                return value && 
+                                  typeof value === 'string' && 
+                                  value.trim().length > 0 &&
+                                  !formErrors[field as keyof FormErrors]
+                              }).length
+                              return (completed / fields.length) * 100
                             })()}%`
                           }}
                           transition={{ duration: 0.3 }}
@@ -885,7 +882,7 @@ export default function ProductsPage() {
                         </span>
                       </div>
                       <div className="relative">
-                        <User className={`absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 transition-colors duration-300 ${
+                        <User className={`absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 z-10 ${
                           formErrors.customer_name ? 'text-red-400' : 
                           orderForm.customer_name.length > 0 ? 'text-[#1F8D9D]' : 'text-gray-400'
                         }`} />
@@ -896,32 +893,14 @@ export default function ProductsPage() {
                           disabled={orderLoading}
                           value={orderForm.customer_name}
                           onChange={(e) => handleFieldChange('customer_name', e.target.value)}
-                          onBlur={(e) => {
-                            const error = validateField('customer_name', e.target.value)
-                            if (error) {
-                              setFormErrors(prev => ({ ...prev, customer_name: error }))
-                            }
-                          }}
-                          className={`w-full pl-12 pr-4 py-4 border rounded-xl focus:ring-2 transition-all duration-300 ${
-                            orderLoading 
-                              ? 'bg-gray-100 cursor-not-allowed border-gray-200'
-                              : formErrors.customer_name 
-                              ? 'border-red-300 bg-red-50 focus:ring-red-200' 
-                              : orderForm.customer_name.length > 0
-                              ? 'border-[#1F8D9D] bg-blue-50 focus:ring-[#1F8D9D] focus:border-transparent'
-                              : 'border-gray-200 focus:ring-[#1F8D9D] focus:border-transparent'
-                          }`}
+                          className="w-full pl-12 pr-4 py-4 border border-gray-300 rounded-xl bg-white focus:outline-none focus:border-[#1F8D9D] hover:border-gray-400 transition-colors duration-200"
                           placeholder="Enter your full name (e.g., John Doe)"
+                          style={{ 
+                            boxShadow: 'none',
+                            WebkitAppearance: 'none',
+                            MozAppearance: 'none'
+                          }}
                         />
-                        {orderForm.customer_name.length > 0 && !formErrors.customer_name && (
-                          <div className="absolute right-4 top-1/2 transform -translate-y-1/2">
-                            <div className="w-5 h-5 bg-green-500 rounded-full flex items-center justify-center">
-                              <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                              </svg>
-                            </div>
-                          </div>
-                        )}
                       </div>
                       {formErrors.customer_name && (
                         <motion.p
@@ -935,10 +914,68 @@ export default function ProductsPage() {
                       )}
                     </motion.div>
 
+                    {/* Guest Email Field - Only show for non-logged-in users */}
+                    {!user && (
+                      <motion.div
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: 0.15 }}
+                      >
+                        <div className="flex justify-between items-center mb-2">
+                          <label className="block text-sm font-medium text-[#1B1B1B]">Email Address</label>
+                          <span className="text-xs text-gray-400">For order updates</span>
+                        </div>
+                        <div className="relative">
+                          <svg className={`absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 transition-colors duration-300 ${
+                            formErrors.guest_email ? 'text-red-400' : 
+                            (orderForm.guest_email && orderForm.guest_email.length > 0) ? 'text-[#1F8D9D]' : 'text-gray-400'
+                          }`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 12a4 4 0 10-8 0 4 4 0 008 0zm0 0v1.5a2.5 2.5 0 005 0V12a9 9 0 10-9 9m4.5-1.206a8.959 8.959 0 01-4.5 1.207" />
+                          </svg>
+                          <input
+                            type="email"
+                            required
+                            disabled={orderLoading}
+                            value={orderForm.guest_email || ''}
+                            onChange={(e) => handleFieldChange('guest_email', e.target.value)}
+                            className={`w-full pl-12 pr-4 py-4 border-2 rounded-xl outline-none transition-colors duration-200 ${
+                              orderLoading 
+                                ? 'bg-gray-100 cursor-not-allowed border-gray-300'
+                                : formErrors.guest_email 
+                                ? 'border-red-400 bg-red-50' 
+                                : (orderForm.guest_email && orderForm.guest_email.length > 0)
+                                ? 'border-[#1F8D9D] bg-blue-50'
+                                : 'border-gray-300 bg-white hover:border-gray-400 focus:border-[#1F8D9D]'
+                            }`}
+                            placeholder="Enter your email address (e.g., john@example.com)"
+                          />
+                          {orderForm.guest_email && orderForm.guest_email.length > 0 && !formErrors.guest_email && validateEmail(orderForm.guest_email) && (
+                            <div className="absolute right-4 top-1/2 transform -translate-y-1/2">
+                              <div className="w-5 h-5 bg-green-500 rounded-full flex items-center justify-center">
+                                <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                                </svg>
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                        {formErrors.guest_email && (
+                          <motion.p
+                            initial={{ opacity: 0, y: -10 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            className="mt-2 text-sm text-red-600 flex items-center bg-red-50 p-2 rounded-lg"
+                          >
+                            <AlertCircle className="w-4 h-4 mr-2 flex-shrink-0" />
+                            {formErrors.guest_email}
+                          </motion.p>
+                        )}
+                      </motion.div>
+                    )}
+
                     <motion.div
                       initial={{ opacity: 0, y: 20 }}
                       animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: 0.2 }}
+                      transition={{ delay: user ? 0.2 : 0.25 }}
                     >
                       <div className="flex justify-between items-center mb-2">
                         <label className="block text-sm font-medium text-[#1B1B1B]">Delivery Address</label>
@@ -966,20 +1003,14 @@ export default function ProductsPage() {
                             target.style.height = 'auto'
                             target.style.height = Math.max(target.scrollHeight, 80) + 'px'
                           }}
-                          onBlur={(e) => {
-                            const error = validateField('address', e.target.value)
-                            if (error) {
-                              setFormErrors(prev => ({ ...prev, address: error }))
-                            }
-                          }}
-                          className={`w-full pl-12 pr-4 py-4 border rounded-xl focus:ring-2 transition-all duration-300 resize-none overflow-hidden ${
+                          className={`w-full pl-12 pr-4 py-4 border-2 rounded-xl outline-none transition-colors duration-200 resize-none overflow-hidden ${
                             orderLoading 
-                              ? 'bg-gray-100 cursor-not-allowed border-gray-200'
+                              ? 'bg-gray-100 cursor-not-allowed border-gray-300'
                               : formErrors.address 
-                              ? 'border-red-300 bg-red-50 focus:ring-red-200' 
+                              ? 'border-red-400 bg-red-50' 
                               : orderForm.address.length > 0
-                              ? 'border-[#1F8D9D] bg-blue-50 focus:ring-[#1F8D9D] focus:border-transparent'
-                              : 'border-gray-200 focus:ring-[#1F8D9D] focus:border-transparent'
+                              ? 'border-[#1F8D9D] bg-blue-50'
+                              : 'border-gray-300 bg-white hover:border-gray-400 focus:border-[#1F8D9D]'
                           }`}
                           placeholder="Enter your complete delivery address&#10;Example: House 123, Street 5, Block A&#10;DHA Phase 2, Lahore, Punjab 54000"
                           rows={3}
@@ -990,7 +1021,7 @@ export default function ProductsPage() {
                             whiteSpace: 'pre-wrap'
                           }}
                         />
-                        {orderForm.address.length >= 10 && !formErrors.address && (
+                        {orderForm.address.length >= 5 && !formErrors.address && (
                           <div className="absolute right-4 top-4">
                             <div className="w-5 h-5 bg-green-500 rounded-full flex items-center justify-center">
                               <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1053,24 +1084,18 @@ export default function ProductsPage() {
                             }
                             handleFieldChange('phone', value)
                           }}
-                          onBlur={(e) => {
-                            const error = validateField('phone', e.target.value)
-                            if (error) {
-                              setFormErrors(prev => ({ ...prev, phone: error }))
-                            }
-                          }}
-                          className={`w-full pl-12 pr-4 py-4 border rounded-xl focus:ring-2 transition-all duration-300 ${
+                          className={`w-full pl-12 pr-4 py-4 border-2 rounded-xl outline-none transition-colors duration-200 ${
                             orderLoading 
-                              ? 'bg-gray-100 cursor-not-allowed border-gray-200'
+                              ? 'bg-gray-100 cursor-not-allowed border-gray-300'
                               : formErrors.phone 
-                              ? 'border-red-300 bg-red-50 focus:ring-red-200' 
+                              ? 'border-red-400 bg-red-50' 
                               : orderForm.phone.length > 0
-                              ? 'border-[#1F8D9D] bg-blue-50 focus:ring-[#1F8D9D] focus:border-transparent'
-                              : 'border-gray-200 focus:ring-[#1F8D9D] focus:border-transparent'
+                              ? 'border-[#1F8D9D] bg-blue-50'
+                              : 'border-gray-300 bg-white hover:border-gray-400 focus:border-[#1F8D9D]'
                           }`}
                           placeholder="03XX-XXXXXXX or +92-3XX-XXXXXXX"
                         />
-                        {orderForm.phone.length >= 10 && !formErrors.phone && (
+                        {orderForm.phone.replace(/\D/g, '').length >= 10 && !formErrors.phone && (
                           <div className="absolute right-4 top-1/2 transform -translate-y-1/2">
                             <div className="w-5 h-5 bg-green-500 rounded-full flex items-center justify-center">
                               <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1191,83 +1216,7 @@ export default function ProductsPage() {
           )}
         </AnimatePresence>
 
-        {/* Enhanced Authentication Modal */}
-        <AnimatePresence>
-          {showAuthModal && (
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-50"
-            >
-              <motion.div
-                initial={{ scale: 0.9, opacity: 0, y: 20 }}
-                animate={{ scale: 1, opacity: 1, y: 0 }}
-                exit={{ scale: 0.9, opacity: 0, y: 20 }}
-                transition={{ type: "spring", stiffness: 300, damping: 30 }}
-                className="bg-white/95 backdrop-blur-sm rounded-3xl max-w-md w-full p-8 text-center shadow-2xl border border-white/20"
-              >
-                <motion.div
-                  initial={{ scale: 0 }}
-                  animate={{ scale: 1 }}
-                  transition={{ delay: 0.2, type: "spring", stiffness: 200 }}
-                  className="w-20 h-20 bg-gradient-to-r from-[#1F8D9D] to-[#FDBA2D] rounded-full flex items-center justify-center mx-auto mb-6"
-                >
-                  <AlertCircle className="w-10 h-10 text-white" />
-                </motion.div>
-                
-                <motion.h3
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.3 }}
-                  className="text-2xl font-bold text-[#1B1B1B] mb-4"
-                >
-                  Authentication Required
-                </motion.h3>
-                
-                <motion.p
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.4 }}
-                  className="text-gray-600 mb-8 text-lg"
-                >
-                  Please log in to your account to place an order and enjoy our premium hair oil products.
-                </motion.p>
 
-                <motion.div
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.5 }}
-                  className="flex flex-col gap-3"
-                >
-                  <Link
-                    href="/login"
-                    className="flex items-center justify-center space-x-2 px-6 py-3 bg-gradient-to-r from-[#1F8D9D] to-[#186F7B] text-white rounded-xl hover:shadow-lg transition-all duration-300"
-                  >
-                    <LogIn className="w-5 h-5" />
-                    <span className="font-medium">Log In</span>
-                  </Link>
-                  
-                  <Link
-                    href="/signup"
-                    className="px-6 py-3 bg-gradient-to-r from-[#FDBA2D] to-[#FFA500] text-[#1B1B1B] rounded-xl hover:shadow-lg transition-all duration-300 font-medium text-center"
-                  >
-                    Sign Up
-                  </Link>
-                  
-                  <motion.button
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.95 }}
-                    onClick={() => setShowAuthModal(false)}
-                    className="px-6 py-3 bg-gray-200 text-gray-700 rounded-xl hover:bg-gray-300 transition-all duration-300 font-medium"
-                  >
-                    Cancel
-                  </motion.button>
-                </motion.div>
-              </motion.div>
-            </motion.div>
-          )}
-        </AnimatePresence>
       </div>
     </ErrorBoundary>
   )
