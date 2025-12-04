@@ -6,15 +6,16 @@ import Image from "next/image"
 import { useAuth } from "@/contexts/auth-context"
 import { Menu, X, LogOut } from "lucide-react"
 import { motion, AnimatePresence } from "framer-motion"
+import { CartIcon } from "./cart/cart-icon"
 
 // Memoized navigation item component for better performance
-const NavigationItem = memo(({ href, children, onClick }: { 
-  href: string; 
-  children: React.ReactNode; 
-  onClick?: () => void 
+const NavigationItem = memo(({ href, children, onClick }: {
+  href: string;
+  children: React.ReactNode;
+  onClick?: () => void
 }) => (
-  <Link 
-    href={href} 
+  <Link
+    href={href}
     className="text-[#1B1B1B] hover:text-[#1F8D9D] transition-all duration-300 text-sm md:text-base font-medium hover:scale-105 relative group"
     onClick={onClick}
   >
@@ -76,7 +77,7 @@ function Navigation() {
   }, [user, userRole, handleSignOut])
 
   return (
-    <motion.nav 
+    <motion.nav
       className="bg-white/95 backdrop-blur-sm shadow-sm border-b border-gray-100 sticky top-0 z-50"
       initial={{ y: -100 }}
       animate={{ y: 0 }}
@@ -90,12 +91,12 @@ function Navigation() {
             transition={{ duration: 0.2 }}
           >
             <Link href="/" className="flex items-center">
-              <Image 
-                src="/zeene-new-logo.png" 
-                alt="ZEENE Logo" 
-                width={200} 
-                height={70} 
-                className="h-14 sm:h-16 md:h-18 lg:h-20 w-auto" 
+              <Image
+                src="/zeene-new-logo.png"
+                alt="ZEENE Logo"
+                width={200}
+                height={70}
+                className="h-14 sm:h-16 md:h-18 lg:h-20 w-auto"
                 priority
               />
             </Link>
@@ -124,7 +125,7 @@ function Navigation() {
                   <Link
                     key={item.href}
                     href={item.href!}
-                    className={item.primary 
+                    className={item.primary
                       ? "bg-gradient-to-r from-[#1F8D9D] to-[#1A7A87] hover:from-[#1A7A87] hover:to-[#1F8D9D] text-white px-5 py-2.5 lg:px-6 lg:py-3 rounded-xl font-semibold transition-all duration-300 transform hover:scale-105 hover:shadow-lg text-sm md:text-base"
                       : "text-[#1B1B1B] hover:text-[#1F8D9D] transition-all duration-300 text-sm md:text-base font-medium hover:scale-105 relative group"
                     }
@@ -134,12 +135,17 @@ function Navigation() {
                 )
               ))}
             </div>
+
+            <div className="ml-4 flex items-center">
+              <CartIcon />
+            </div>
           </div>
 
           {/* Mobile menu button */}
-          <div className="md:hidden">
-            <button 
-              onClick={toggleMenu} 
+          <div className="md:hidden flex items-center space-x-4">
+            <CartIcon />
+            <button
+              onClick={toggleMenu}
               className="text-[#1B1B1B] hover:text-[#1F8D9D] p-2 rounded-lg hover:bg-gray-100 transition-all duration-300 hover:scale-110"
               aria-label="Toggle menu"
             >
