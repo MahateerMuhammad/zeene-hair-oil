@@ -325,11 +325,11 @@ export default function CheckoutPage() {
                                                 <div className="flex-1 min-w-0">
                                                     <h3 className="font-medium text-gray-900 truncate">{item.name}</h3>
                                                     <p className="text-sm text-gray-500">
-                                                        PKR {item.sale_price ? item.sale_price.toFixed(0) : item.price.toFixed(0)} x {item.quantity}
+                                                        PKR {item.price.toFixed(0)} x {item.quantity}
                                                     </p>
                                                 </div>
                                                 <div className="text-right font-medium text-gray-900">
-                                                    PKR {((item.sale_price || item.price) * item.quantity).toFixed(0)}
+                                                    PKR {(item.price * item.quantity).toFixed(0)}
                                                 </div>
                                             </div>
                                         ))}
