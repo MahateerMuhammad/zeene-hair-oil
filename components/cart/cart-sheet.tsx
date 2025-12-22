@@ -52,8 +52,9 @@ export function CartSheet() {
                                             layout
                                             initial={{ opacity: 0, x: 20 }}
                                             animate={{ opacity: 1, x: 0 }}
-                                            exit={{ opacity: 0, x: -50 }}
+                                            exit={{ opacity: 0, x: -50, height: 0, marginBottom: 0 }}
                                             transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
+                                            className="will-change-transform"
                                         >
                                             <CartItem item={item} />
                                         </motion.div>

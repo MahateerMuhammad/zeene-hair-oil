@@ -265,6 +265,20 @@ export default function ProductsPage() {
                               </p>
                             </div>
 
+                            {/* Rating Display - Added explicitly */}
+                            <div className="flex items-center space-x-1 pt-1 pb-2">
+                              <div className="flex">
+                                {[1, 2, 3, 4, 5].map((star) => (
+                                  <Star
+                                    key={star}
+                                    size={12}
+                                    className={`${star <= Math.round(product.rating || 0) ? "fill-[#FDBA2D] text-[#FDBA2D]" : "text-gray-200"}`}
+                                  />
+                                ))}
+                              </div>
+                              <span className="text-[10px] text-gray-400 font-bold">({product.review_count || 0})</span>
+                            </div>
+
                             <p className="text-[10px] font-bold tracking-[0.2em] uppercase text-gray-400">
                               {product.is_on_sale ? `Limited Release` : `Core Collection`}
                             </p>

@@ -77,7 +77,7 @@ export default function ProductImage({
   }
 
   return (
-    <div className={cn("relative overflow-hidden", className)}>
+    <div className={cn("relative overflow-hidden", fill && "h-full w-full", className)}>
       {/* Loading skeleton */}
       {isLoading && (
         <div className="absolute inset-0 bg-gradient-to-r from-gray-200 via-gray-300 to-gray-200 animate-pulse">

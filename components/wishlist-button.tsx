@@ -76,7 +76,8 @@ export function WishlistButton({ productId, productName }: WishlistButtonProps) 
         toast.success(`${productName} added to wishlist`)
       }
     } catch (error: any) {
-      console.error("Wishlist error:", error)
+      console.error("Wishlist error full:", JSON.stringify(error, null, 2))
+      console.error("Wishlist error mesg:", error.message)
       toast.error(error.message || "Failed to update wishlist")
     } finally {
       setLoading(false)

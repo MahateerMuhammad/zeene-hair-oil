@@ -46,13 +46,50 @@ export function ProductReviews({ productId, productName }: ProductReviewsProps) 
   const [reviewText, setReviewText] = useState("")
   const [submitting, setSubmitting] = useState(false)
   const [dialogOpen, setDialogOpen] = useState(false)
+  const [hasPurchased, setHasPurchased] = useState(false)
   const { user } = useAuth()
 
   useEffect(() => {
     fetchReviews()
   }, [productId])
 
+  useEffect(() => {
+    if (user) {
+      checkPurchaseHistory()
+    } else {
+      setHasPurchased(false)
+    }
+  }, [user, productId])
+
+  const checkPurchaseHistory = async () => {
+    try {
+      // Check if user has an order item for this product
+      // We need to join orders and order_items
+      const { data, error } = await supabase
+        .from('order_items')
+        .select(`
+          id,
+          orders!inner (
+            user_id
+          )
+        `)
+        .eq('product_id', productId)
+        .eq('orders.user_id', user!.id)
+        .limit(1)
+
+      if (error) {
+        console.error("Error checking purchase history:", error)
+        return
+      }
+
+      setHasPurchased(data && data.length > 0)
+    } catch (error) {
+      console.error("Error checking purchase history:", error)
+    }
+  }
+
   const fetchReviews = async () => {
+    console.log("Fetching reviews for product:", productId)
     try {
       const { data, error } = await supabase
         .from("product_reviews")
@@ -64,10 +101,15 @@ export function ProductReviews({ productId, productName }: ProductReviewsProps) 
           )
         `)
         .eq("product_id", productId)
-        .eq("is_approved", true)
+        // .eq("is_approved", true) // Temporarily showing all for testing
         .order("created_at", { ascending: false })
 
-      if (error) throw error
+      if (error) {
+        console.error("Supabase error fetching reviews:", error)
+        throw error
+      }
+
+      console.log("Fetched reviews data:", data)
       setReviews(data || [])
     } catch (error) {
       console.error("Error fetching reviews:", error)
@@ -81,6 +123,11 @@ export function ProductReviews({ productId, productName }: ProductReviewsProps) 
 
     if (!user) {
       toast.error("Please login to write a review")
+      return
+    }
+
+    if (!hasPurchased) {
+      toast.error("You must purchase this product to leave a review")
       return
     }
 
@@ -103,6 +150,7 @@ export function ProductReviews({ productId, productName }: ProductReviewsProps) 
         rating,
         title: title.trim() || null,
         review_text: reviewText.trim(),
+        is_verified_purchase: true, // Since we checked via logic
         is_approved: false, // Requires admin approval
       })
 
@@ -114,7 +162,8 @@ export function ProductReviews({ productId, productName }: ProductReviewsProps) 
       setReviewText("")
       setDialogOpen(false)
     } catch (error: any) {
-      console.error("Error submitting review:", error)
+      console.error("Error submitting review full object:", JSON.stringify(error, null, 2))
+      console.error("Error submitting review message:", error.message || "No message")
       toast.error(error.message || "Failed to submit review")
     } finally {
       setSubmitting(false)
@@ -136,11 +185,10 @@ export function ProductReviews({ productId, productName }: ProductReviewsProps) 
               {[1, 2, 3, 4, 5].map((star) => (
                 <Star
                   key={star}
-                  className={`h-5 w-5 ${
-                    star <= Math.round(averageRating)
-                      ? "fill-yellow-400 text-yellow-400"
-                      : "text-gray-300"
-                  }`}
+                  className={`h-5 w-5 ${star <= Math.round(averageRating)
+                    ? "fill-yellow-400 text-yellow-400"
+                    : "text-gray-300"
+                    }`}
                 />
               ))}
             </div>
@@ -149,85 +197,92 @@ export function ProductReviews({ productId, productName }: ProductReviewsProps) 
           </div>
         </div>
 
-        <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-          <DialogTrigger asChild>
-            <Button>Write a Review</Button>
-          </DialogTrigger>
-          <DialogContent className="sm:max-w-[500px]">
-            <DialogHeader>
-              <DialogTitle>Write a Review</DialogTitle>
-              <DialogDescription>
-                Share your experience with {productName}
-              </DialogDescription>
-            </DialogHeader>
-            <form onSubmit={handleSubmit} className="space-y-4">
-              {/* Rating Stars */}
-              <div>
-                <label className="block text-sm font-medium mb-2">Your Rating *</label>
-                <div className="flex gap-2">
-                  {[1, 2, 3, 4, 5].map((star) => (
-                    <button
-                      key={star}
+        {user ? (
+          hasPurchased ? (
+            <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+              <DialogTrigger asChild>
+                <Button>Write a Review</Button>
+              </DialogTrigger>
+              <DialogContent className="sm:max-w-[500px]">
+                <DialogHeader>
+                  <DialogTitle>Write a Review</DialogTitle>
+                  <DialogDescription>
+                    Share your experience with {productName}
+                  </DialogDescription>
+                </DialogHeader>
+                <form onSubmit={handleSubmit} className="space-y-4">
+                  {/* Rating Stars */}
+                  <div>
+                    <label className="block text-sm font-medium mb-2">Your Rating *</label>
+                    <div className="flex gap-2">
+                      {[1, 2, 3, 4, 5].map((star) => (
+                        <button
+                          key={star}
+                          type="button"
+                          onClick={() => setRating(star)}
+                          onMouseEnter={() => setHoverRating(star)}
+                          onMouseLeave={() => setHoverRating(0)}
+                          className="focus:outline-none"
+                        >
+                          <Star
+                            className={`h-8 w-8 transition-colors ${star <= (hoverRating || rating)
+                              ? "fill-yellow-400 text-yellow-400"
+                              : "text-gray-300"
+                              }`}
+                          />
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Title */}
+                  <div>
+                    <label className="block text-sm font-medium mb-2">Review Title</label>
+                    <Input
+                      value={title}
+                      onChange={(e) => setTitle(e.target.value)}
+                      placeholder="Summarize your experience"
+                      maxLength={100}
+                    />
+                  </div>
+
+                  {/* Review Text */}
+                  <div>
+                    <label className="block text-sm font-medium mb-2">Your Review *</label>
+                    <Textarea
+                      value={reviewText}
+                      onChange={(e) => setReviewText(e.target.value)}
+                      placeholder="Tell us what you think..."
+                      rows={5}
+                      maxLength={1000}
+                      required
+                    />
+                    <p className="text-xs text-gray-500 mt-1">
+                      {reviewText.length}/1000 characters
+                    </p>
+                  </div>
+
+                  <div className="flex gap-3">
+                    <Button type="submit" disabled={submitting} className="flex-1">
+                      {submitting ? "Submitting..." : "Submit Review"}
+                    </Button>
+                    <Button
                       type="button"
-                      onClick={() => setRating(star)}
-                      onMouseEnter={() => setHoverRating(star)}
-                      onMouseLeave={() => setHoverRating(0)}
-                      className="focus:outline-none"
+                      variant="outline"
+                      onClick={() => setDialogOpen(false)}
                     >
-                      <Star
-                        className={`h-8 w-8 transition-colors ${
-                          star <= (hoverRating || rating)
-                            ? "fill-yellow-400 text-yellow-400"
-                            : "text-gray-300"
-                        }`}
-                      />
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              {/* Title */}
-              <div>
-                <label className="block text-sm font-medium mb-2">Review Title</label>
-                <Input
-                  value={title}
-                  onChange={(e) => setTitle(e.target.value)}
-                  placeholder="Summarize your experience"
-                  maxLength={100}
-                />
-              </div>
-
-              {/* Review Text */}
-              <div>
-                <label className="block text-sm font-medium mb-2">Your Review *</label>
-                <Textarea
-                  value={reviewText}
-                  onChange={(e) => setReviewText(e.target.value)}
-                  placeholder="Tell us what you think..."
-                  rows={5}
-                  maxLength={1000}
-                  required
-                />
-                <p className="text-xs text-gray-500 mt-1">
-                  {reviewText.length}/1000 characters
-                </p>
-              </div>
-
-              <div className="flex gap-3">
-                <Button type="submit" disabled={submitting} className="flex-1">
-                  {submitting ? "Submitting..." : "Submit Review"}
-                </Button>
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => setDialogOpen(false)}
-                >
-                  Cancel
-                </Button>
-              </div>
-            </form>
-          </DialogContent>
-        </Dialog>
+                      Cancel
+                    </Button>
+                  </div>
+                </form>
+              </DialogContent>
+            </Dialog>
+          ) : null // Don't show anything if not purchased
+        ) : (
+          <Button variant="outline" onClick={() => window.location.href = '/login'}>
+            Login to Review
+          </Button>
+        )}
       </div>
 
       {/* Reviews List */}
@@ -254,11 +309,10 @@ export function ProductReviews({ productId, productName }: ProductReviewsProps) 
                       {[1, 2, 3, 4, 5].map((star) => (
                         <Star
                           key={star}
-                          className={`h-4 w-4 ${
-                            star <= review.rating
-                              ? "fill-yellow-400 text-yellow-400"
-                              : "text-gray-300"
-                          }`}
+                          className={`h-4 w-4 ${star <= review.rating
+                            ? "fill-yellow-400 text-yellow-400"
+                            : "text-gray-300"
+                            }`}
                         />
                       ))}
                     </div>
@@ -271,7 +325,7 @@ export function ProductReviews({ productId, productName }: ProductReviewsProps) 
                   </div>
                   <div className="mb-2">
                     <p className="font-semibold">
-                      {review.users?.full_name || "Anonymous"}
+                      {review.users?.full_name || review.users?.email?.split('@')[0] || "Valued Customer"}
                     </p>
                     <p className="text-xs text-gray-500">
                       {new Date(review.created_at).toLocaleDateString("en-US", {
