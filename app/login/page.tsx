@@ -1,14 +1,13 @@
 "use client"
 
 import type React from "react"
-
 import { useState } from "react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
 import { useAuth } from "@/contexts/auth-context"
-import Navigation from "@/components/navigation"
 import { supabase } from "@/lib/supabase"
-import { Eye, EyeOff, Mail, Lock } from "lucide-react"
+import { Eye, EyeOff, ArrowRight } from "lucide-react"
+import { motion } from "framer-motion"
 
 export default function LoginPage() {
   const [email, setEmail] = useState("")
@@ -76,147 +75,148 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[#F9F9F9] to-[#1F8D9D]/10">
-      <Navigation />
+    <div className="min-h-screen bg-white selection:bg-[#1F8D9D]/20">
+      <div className="container mx-auto px-4 py-32">
+        <div className="max-w-md mx-auto">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
+          >
+            <div className="mb-16">
+              <p className="text-[10px] font-bold tracking-[0.4em] uppercase text-[#1F8D9D] mb-6">Access Portal</p>
+              <h1 className="text-6xl md:text-7xl font-playfair font-black text-[#1B1B1B] leading-[0.9] tracking-tighter mb-8">
+                Welcome<br />Back.
+              </h1>
+              <div className="h-[2px] w-24 bg-[#1B1B1B] mb-6" />
+              <p className="text-sm text-gray-500 font-light">Sign in to access your ZEENE account</p>
+            </div>
 
-      <div className="flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
-        <div className="max-w-md w-full space-y-8">
-          <div className="text-center">
-            <h2 className="text-4xl font-playfair font-bold text-[#1B1B1B] mb-2">Welcome Back</h2>
-            <p className="text-gray-600">Sign in to your ZEENE account</p>
-          </div>
+            <form onSubmit={handleSubmit} className="space-y-8">
+              {error && (
+                <div className="bg-red-50 border-l-2 border-red-500 px-6 py-4">
+                  <p className="text-[10px] font-bold tracking-wider uppercase text-red-600">{error}</p>
+                </div>
+              )}
 
-          <form className="mt-8 space-y-6 bg-white p-8 rounded-2xl shadow-lg" onSubmit={handleSubmit}>
-            {error && <div className="bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-lg">{error}</div>}
-
-            <div className="space-y-4">
-              <div>
-                <label htmlFor="email" className="block text-sm font-medium text-[#1B1B1B] mb-2">
-                  Email Address
-                </label>
-                <div className="relative">
-                  <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+              <div className="space-y-6">
+                <div className="space-y-2">
+                  <label className="text-[9px] font-bold tracking-[0.2em] uppercase text-gray-400">Email Address</label>
                   <input
-                    id="email"
-                    name="email"
                     type="email"
                     required
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#1F8D9D] focus:border-transparent transition-all"
-                    placeholder="Enter your email"
+                    className="w-full bg-transparent border-b border-gray-200 py-3 focus:border-[#1B1B1B] outline-none transition-colors text-sm font-medium"
+                    placeholder="your@email.com"
                   />
+                </div>
+
+                <div className="space-y-2">
+                  <label className="text-[9px] font-bold tracking-[0.2em] uppercase text-gray-400">Password</label>
+                  <div className="relative">
+                    <input
+                      type={showPassword ? "text" : "password"}
+                      required
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      className="w-full bg-transparent border-b border-gray-200 py-3 pr-10 focus:border-[#1B1B1B] outline-none transition-colors text-sm font-medium"
+                      placeholder="Enter your password"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      className="absolute right-0 top-1/2 -translate-y-1/2 text-gray-400 hover:text-[#1B1B1B] transition-colors"
+                    >
+                      {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                    </button>
+                  </div>
                 </div>
               </div>
 
-              <div>
-                <label htmlFor="password" className="block text-sm font-medium text-[#1B1B1B] mb-2">
-                  Password
-                </label>
-                <div className="relative">
-                  <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
-                  <input
-                    id="password"
-                    name="password"
-                    type={showPassword ? "text" : "password"}
-                    required
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    className="w-full pl-10 pr-12 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#1F8D9D] focus:border-transparent transition-all"
-                    placeholder="Enter your password"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
-                  >
-                    {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
-                  </button>
-                </div>
+              <div className="flex items-center justify-between text-[10px] font-bold tracking-wider uppercase">
+                <button
+                  type="button"
+                  onClick={() => setShowResetModal(true)}
+                  className="text-gray-400 hover:text-[#1B1B1B] transition-colors"
+                >
+                  Forgot Password?
+                </button>
               </div>
-            </div>
 
-            <button
-              type="submit"
-              disabled={loading}
-              style={{
-                backgroundColor: "#1F8D9D",
-                color: "#FFFFFF",
-                padding: "10px 20px",
-                borderRadius: "5px",
-                width: "100%",
-                fontSize: "18px",
-                cursor: "pointer",
-                opacity: loading ? "0.5" : "1",
-              }}
-            >
-              {loading ? "Signing In..." : "Sign In"}
-            </button>
-
-            <div className="text-center space-y-2">
               <button
-                type="button"
-                onClick={() => setShowResetModal(true)}
-                className="text-[#1F8D9D] hover:text-[#1F8D9D]/80 font-medium text-sm"
+                type="submit"
+                disabled={loading}
+                className="group w-full bg-[#1B1B1B] hover:bg-[#1F8D9D] text-white py-5 text-[10px] font-bold tracking-[0.3em] uppercase transition-all duration-500 flex items-center justify-center space-x-3 disabled:opacity-50"
               >
-                Forgot your password?
+                {loading ? (
+                  <span>Authenticating...</span>
+                ) : (
+                  <>
+                    <span>Sign In</span>
+                    <ArrowRight size={14} className="group-hover:translate-x-1 transition-transform duration-300" />
+                  </>
+                )}
               </button>
-              <p className="text-gray-600">
-                {"Don't have an account? "}
-                <Link href="/signup" className="text-[#1F8D9D] hover:text-[#1F8D9D]/80 font-semibold">
-                  Sign up
-                </Link>
-              </p>
-            </div>
-          </form>
+
+              <div className="text-center pt-8 border-t border-gray-100">
+                <p className="text-[10px] font-bold tracking-wider uppercase text-gray-400">
+                  New to ZEENE?{" "}
+                  <Link href="/signup" className="text-[#1B1B1B] hover:text-[#1F8D9D] transition-colors">
+                    Create Account
+                  </Link>
+                </p>
+              </div>
+            </form>
+          </motion.div>
         </div>
       </div>
 
       {/* Forgot Password Modal */}
       {showResetModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-2xl max-w-md w-full p-8">
-            <h3 className="text-2xl font-semibold text-[#1B1B1B] mb-4">Reset Password</h3>
-            <p className="text-gray-600 mb-6">
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="bg-white max-w-md w-full p-12"
+          >
+            <h3 className="text-3xl font-playfair font-black text-[#1B1B1B] mb-4">Reset Password</h3>
+            <p className="text-sm text-gray-500 mb-8">
               Enter your email address and we'll send you a link to reset your password.
             </p>
 
-            <form onSubmit={handleForgotPassword} className="space-y-4">
+            <form onSubmit={handleForgotPassword} className="space-y-6">
               {resetMessage && (
-                <div className={`px-4 py-3 rounded-lg ${
-                  resetMessage.includes('sent') 
-                    ? 'bg-green-50 border border-green-200 text-green-600' 
-                    : 'bg-red-50 border border-red-200 text-red-600'
-                }`}>
-                  {resetMessage}
+                <div className={`px-6 py-4 border-l-2 ${resetMessage.includes('sent')
+                    ? 'bg-green-50 border-green-500'
+                    : 'bg-red-50 border-red-500'
+                  }`}>
+                  <p className={`text-[10px] font-bold tracking-wider uppercase ${resetMessage.includes('sent') ? 'text-green-600' : 'text-red-600'
+                    }`}>
+                    {resetMessage}
+                  </p>
                 </div>
               )}
 
-              <div>
-                <label htmlFor="resetEmail" className="block text-sm font-medium text-[#1B1B1B] mb-2">
-                  Email Address
-                </label>
-                <div className="relative">
-                  <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
-                  <input
-                    id="resetEmail"
-                    type="email"
-                    required
-                    value={resetEmail}
-                    onChange={(e) => setResetEmail(e.target.value)}
-                    className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#1F8D9D] focus:border-transparent"
-                    placeholder="Enter your email"
-                  />
-                </div>
+              <div className="space-y-2">
+                <label className="text-[9px] font-bold tracking-[0.2em] uppercase text-gray-400">Email Address</label>
+                <input
+                  type="email"
+                  required
+                  value={resetEmail}
+                  onChange={(e) => setResetEmail(e.target.value)}
+                  className="w-full bg-transparent border-b border-gray-200 py-3 focus:border-[#1B1B1B] outline-none transition-colors text-sm font-medium"
+                  placeholder="your@email.com"
+                />
               </div>
 
-              <div className="flex space-x-3">
+              <div className="flex space-x-4">
                 <button
                   type="submit"
                   disabled={resetLoading}
-                  className="flex-1 py-3 bg-[#1F8D9D] text-white rounded-lg hover:bg-[#186F7B] transition-colors duration-300 disabled:opacity-50"
+                  className="flex-1 py-4 bg-[#1B1B1B] text-white text-[10px] font-bold tracking-[0.2em] uppercase hover:bg-[#1F8D9D] transition-colors disabled:opacity-50"
                 >
-                  {resetLoading ? "Sending..." : "Send Reset Link"}
+                  {resetLoading ? "Sending..." : "Send Link"}
                 </button>
                 <button
                   type="button"
@@ -225,13 +225,13 @@ export default function LoginPage() {
                     setResetEmail("")
                     setResetMessage("")
                   }}
-                  className="flex-1 py-3 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors duration-300"
+                  className="flex-1 py-4 bg-gray-100 text-[#1B1B1B] text-[10px] font-bold tracking-[0.2em] uppercase hover:bg-gray-200 transition-colors"
                 >
                   Cancel
                 </button>
               </div>
             </form>
-          </div>
+          </motion.div>
         </div>
       )}
     </div>

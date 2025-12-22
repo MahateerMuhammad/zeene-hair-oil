@@ -1,14 +1,13 @@
 "use client"
 
 import type React from "react"
-
 import { useState } from "react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
 import { useAuth } from "@/contexts/auth-context"
-import Navigation from "@/components/navigation"
 import { validateEmail, validatePassword, sanitizeInput } from "@/lib/security"
-import { Eye, EyeOff, Mail, Lock } from "lucide-react"
+import { Eye, EyeOff, ArrowRight } from "lucide-react"
+import { motion } from "framer-motion"
 
 export default function SignupPage() {
   const [email, setEmail] = useState("")
@@ -70,115 +69,111 @@ export default function SignupPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[#F9F9F9] to-[#1F8D9D]/10">
-      <Navigation />
+    <div className="min-h-screen bg-white selection:bg-[#1F8D9D]/20">
+      <div className="container mx-auto px-4 py-32">
+        <div className="max-w-md mx-auto">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
+          >
+            <div className="mb-16">
+              <p className="text-[10px] font-bold tracking-[0.4em] uppercase text-[#1F8D9D] mb-6">Registration</p>
+              <h1 className="text-6xl md:text-7xl font-playfair font-black text-[#1B1B1B] leading-[0.9] tracking-tighter mb-8">
+                Join<br />ZEENE.
+              </h1>
+              <div className="h-[2px] w-24 bg-[#1B1B1B] mb-6" />
+              <p className="text-sm text-gray-500 font-light">Create your account and discover curated essentials</p>
+            </div>
 
-      <div className="flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
-        <div className="max-w-md w-full space-y-8">
-          <div className="text-center">
-            <h2 className="text-4xl font-playfair font-bold text-[#1B1B1B] mb-2">Join ZEENE</h2>
-            <p className="text-gray-600">Create your account and start your hair care journey</p>
-          </div>
+            <form onSubmit={handleSubmit} className="space-y-8">
+              {error && (
+                <div className="bg-red-50 border-l-2 border-red-500 px-6 py-4">
+                  <p className="text-[10px] font-bold tracking-wider uppercase text-red-600">{error}</p>
+                </div>
+              )}
 
-          <form className="mt-8 space-y-6 bg-white p-8 rounded-2xl shadow-lg" onSubmit={handleSubmit}>
-            {error && <div className="bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-lg">{error}</div>}
+              {success && (
+                <div className="bg-green-50 border-l-2 border-green-500 px-6 py-4">
+                  <p className="text-[10px] font-bold tracking-wider uppercase text-green-600">{success}</p>
+                </div>
+              )}
 
-            {success && (
-              <div className="bg-green-50 border border-green-200 text-green-600 px-4 py-3 rounded-lg">{success}</div>
-            )}
-
-            <div className="space-y-4">
-              <div>
-                <label htmlFor="email" className="block text-sm font-medium text-[#1B1B1B] mb-2">
-                  Email Address
-                </label>
-                <div className="relative">
-                  <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+              <div className="space-y-6">
+                <div className="space-y-2">
+                  <label className="text-[9px] font-bold tracking-[0.2em] uppercase text-gray-400">Email Address</label>
                   <input
-                    id="email"
-                    name="email"
                     type="email"
                     required
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#1F8D9D] focus:border-transparent transition-all"
-                    placeholder="Enter your email"
+                    className="w-full bg-transparent border-b border-gray-200 py-3 focus:border-[#1B1B1B] outline-none transition-colors text-sm font-medium"
+                    placeholder="your@email.com"
                   />
                 </div>
-              </div>
 
-              <div>
-                <label htmlFor="password" className="block text-sm font-medium text-[#1B1B1B] mb-2">
-                  Password
-                </label>
-                <div className="relative">
-                  <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
-                  <input
-                    id="password"
-                    name="password"
-                    type={showPassword ? "text" : "password"}
-                    required
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    className="w-full pl-10 pr-12 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#1F8D9D] focus:border-transparent transition-all"
-                    placeholder="Create a password"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
-                  >
-                    {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
-                  </button>
+                <div className="space-y-2">
+                  <label className="text-[9px] font-bold tracking-[0.2em] uppercase text-gray-400">Password</label>
+                  <div className="relative">
+                    <input
+                      type={showPassword ? "text" : "password"}
+                      required
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      className="w-full bg-transparent border-b border-gray-200 py-3 pr-10 focus:border-[#1B1B1B] outline-none transition-colors text-sm font-medium"
+                      placeholder="Create a password"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      className="absolute right-0 top-1/2 -translate-y-1/2 text-gray-400 hover:text-[#1B1B1B] transition-colors"
+                    >
+                      {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                    </button>
+                  </div>
+                  <p className="text-[8px] text-gray-400 tracking-wider uppercase mt-2">
+                    Minimum 8 characters, include uppercase, lowercase, and number
+                  </p>
                 </div>
-              </div>
 
-              <div>
-                <label htmlFor="confirmPassword" className="block text-sm font-medium text-[#1B1B1B] mb-2">
-                  Confirm Password
-                </label>
-                <div className="relative">
-                  <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+                <div className="space-y-2">
+                  <label className="text-[9px] font-bold tracking-[0.2em] uppercase text-gray-400">Confirm Password</label>
                   <input
-                    id="confirmPassword"
-                    name="confirmPassword"
                     type="password"
                     required
                     value={confirmPassword}
                     onChange={(e) => setConfirmPassword(e.target.value)}
-                    className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#1F8D9D] focus:border-transparent transition-all"
+                    className="w-full bg-transparent border-b border-gray-200 py-3 focus:border-[#1B1B1B] outline-none transition-colors text-sm font-medium"
                     placeholder="Confirm your password"
                   />
                 </div>
               </div>
-            </div>
 
-            <button
-              type="submit"
-              disabled={loading}
-              style={{
-                width: "100%",
-                backgroundColor: "#1F8D9D",
-                color: "white",
-                padding: "10px 16px",
-                borderRadius: "4px",
-                fontSize: "16px",
-                cursor: "pointer",
-                opacity: loading ? "0.5" : "1",
-              }}
-            >
-              {loading ? "Creating Account..." : "Create Account"}
-            </button>
+              <button
+                type="submit"
+                disabled={loading}
+                className="group w-full bg-[#1B1B1B] hover:bg-[#1F8D9D] text-white py-5 text-[10px] font-bold tracking-[0.3em] uppercase transition-all duration-500 flex items-center justify-center space-x-3 disabled:opacity-50"
+              >
+                {loading ? (
+                  <span>Creating Account...</span>
+                ) : (
+                  <>
+                    <span>Create Account</span>
+                    <ArrowRight size={14} className="group-hover:translate-x-1 transition-transform duration-300" />
+                  </>
+                )}
+              </button>
 
-            <div className="text-center">
-              <p className="text-gray-600">
-                Already have an account?{" "}
-                <Link href="/login" className="text-[#1F8D9D] hover:text-[#1F8D9D]/80 font-semibold">
-                  Sign in
-                </Link>
-              </p>
-            </div>
-          </form>
+              <div className="text-center pt-8 border-t border-gray-100">
+                <p className="text-[10px] font-bold tracking-wider uppercase text-gray-400">
+                  Already have an account?{" "}
+                  <Link href="/login" className="text-[#1B1B1B] hover:text-[#1F8D9D] transition-colors">
+                    Sign In
+                  </Link>
+                </p>
+              </div>
+            </form>
+          </motion.div>
         </div>
       </div>
     </div>

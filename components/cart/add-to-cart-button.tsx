@@ -2,8 +2,8 @@
 
 import { useState } from "react"
 import { useCart } from "@/contexts/cart-context"
-import { Button } from "@/components/ui/button"
-import { ShoppingCart, Check } from "lucide-react"
+import { motion, AnimatePresence } from "framer-motion"
+import { ShoppingBag, Check } from "lucide-react"
 import { cn } from "@/lib/utils"
 
 interface AddToCartButtonProps {
@@ -11,8 +11,6 @@ interface AddToCartButtonProps {
     quantity?: number
     selectedVariant?: any
     className?: string
-    variant?: "default" | "outline" | "secondary" | "ghost" | "link" | "destructive"
-    size?: "default" | "sm" | "lg" | "icon"
 }
 
 export function AddToCartButton({
@@ -20,8 +18,6 @@ export function AddToCartButton({
     quantity = 1,
     selectedVariant,
     className,
-    variant = "default",
-    size = "default"
 }: AddToCartButtonProps) {
     const { addToCart } = useCart()
     const [isAdded, setIsAdded] = useState(false)
@@ -39,27 +35,44 @@ export function AddToCartButton({
     }
 
     return (
-        <Button
+        <motion.button
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
             onClick={handleAddToCart}
-            variant={variant}
-            size={size}
+            disabled={isAdded}
             className={cn(
-                "transition-all duration-300",
-                isAdded && "bg-green-600 hover:bg-green-700 text-white border-green-600",
+                "relative h-14 overflow-hidden rounded-sm text-[10px] font-bold tracking-[0.3em] uppercase transition-all duration-500 shadow-2xl disabled:cursor-default",
+                isAdded
+                    ? "bg-[#1F8D9D] text-white"
+                    : "bg-[#1B1B1B] hover:bg-[#1F8D9D] text-white",
                 className
             )}
         >
-            {isAdded ? (
-                <>
-                    <Check className="w-4 h-4 mr-2" />
-                    Added
-                </>
-            ) : (
-                <>
-                    <ShoppingCart className="w-4 h-4 mr-2" />
-                    Add to Cart
-                </>
-            )}
-        </Button>
+            <AnimatePresence mode="wait">
+                {isAdded ? (
+                    <motion.div
+                        key="added"
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: -10 }}
+                        className="flex items-center justify-center space-x-2"
+                    >
+                        <Check className="w-4 h-4" />
+                        <span>Added to Cart</span>
+                    </motion.div>
+                ) : (
+                    <motion.div
+                        key="add"
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: -10 }}
+                        className="flex items-center justify-center space-x-2"
+                    >
+                        <ShoppingBag className="w-4 h-4" />
+                        <span>Add to Cart</span>
+                    </motion.div>
+                )}
+            </AnimatePresence>
+        </motion.button>
     )
 }

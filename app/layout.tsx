@@ -6,6 +6,8 @@ import { Providers } from "@/components/providers"
 import PerformanceMonitorComponent from "@/components/performance-monitor"
 import WhatsAppFloat from "@/components/whatsapp-float"
 import { Toaster } from "sonner"
+import { PageTransition } from "@/components/page-transition"
+import Navigation from "@/components/navigation"
 
 const playfair = Playfair_Display({
   subsets: ["latin"],
@@ -18,12 +20,11 @@ const inter = Inter({
 })
 
 export const metadata: Metadata = {
-  title: "ZEENE Hair Oil - Healthy Hair Starts Here",
+  title: "ZEENE | Curated Lifestyle & Modern Essentials",
   description:
-    "Premium natural hair oil for healthy, shiny, and beautiful hair. Experience the power of nature with ZEENE.",
-  keywords: "hair oil, natural hair care, healthy hair, hair growth, ZEENE",
+    "Discover a premium selection of curated lifestyle essentials. Experience modern luxury with ZEENE's timeless quality and sophisticated design.",
+  keywords: "premium e-commerce, lifestyle essentials, modern luxury, curated products, ZEENE",
   generator: 'v0.dev',
-  // Performance and SEO enhancements
   robots: {
     index: true,
     follow: true,
@@ -35,22 +36,19 @@ export const metadata: Metadata = {
       'max-snippet': -1,
     },
   },
-  // Open Graph for better social sharing
   openGraph: {
     type: 'website',
     locale: 'en_US',
     url: 'https://zeene.store',
-    title: 'ZEENE Hair Oil - Healthy Hair Starts Here',
-    description: 'Premium natural hair oil for healthy, shiny, and beautiful hair. Experience the power of nature with ZEENE.',
-    siteName: 'ZEENE Hair Oil',
+    title: 'ZEENE | Curated Lifestyle & Modern Essentials',
+    description: 'Discover a premium selection of curated lifestyle essentials. Experience modern luxury with ZEENE’s timeless quality.',
+    siteName: 'ZEENE',
   },
-  // Twitter Card
   twitter: {
     card: 'summary_large_image',
-    title: 'ZEENE Hair Oil - Healthy Hair Starts Here',
-    description: 'Premium natural hair oil for healthy, shiny, and beautiful hair.',
+    title: 'ZEENE | Curated Lifestyle & Modern Essentials',
+    description: 'Discover a premium selection of curated lifestyle essentials.',
   },
-  // Verification and other meta tags
   verification: {
     google: process.env.GOOGLE_SITE_VERIFICATION,
   },
@@ -62,34 +60,33 @@ export default function RootLayout({
   children: React.ReactNode
 }) {
   return (
-    <html lang="en">
+    <html lang="en" className="scroll-smooth">
       <head>
-        {/* Preconnect to external domains for faster loading */}
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
-        {/* DNS prefetch for external resources */}
         <link rel="dns-prefetch" href="https://api.resend.com" />
         <link rel="dns-prefetch" href="https://supabase.co" />
-        {/* Viewport meta for responsive design */}
         <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-        {/* Theme color for mobile browsers */}
-        <meta name="theme-color" content="#1F8D9D" />
-        <meta name="msapplication-TileColor" content="#1F8D9D" />
-        {/* Prevent zoom on iOS */}
+        <meta name="theme-color" content="#1B1B1B" />
+        <meta name="msapplication-TileColor" content="#1B1B1B" />
         <meta name="format-detection" content="telephone=no" />
       </head>
-      <body className={`${playfair.variable} ${inter.variable} font-inter antialiased`}>
+      <body className={`${playfair.variable} ${inter.variable} font-inter antialiased bg-white text-[#1B1B1B]`}>
         <Providers>
           <PerformanceMonitorComponent />
-          {children}
+          <Navigation />
+          <PageTransition>
+            {children}
+          </PageTransition>
           <WhatsAppFloat />
           <Toaster
-            position="top-right"
+            position="bottom-right"
             toastOptions={{
+              className: "font-inter text-[10px] font-bold tracking-widest uppercase rounded-sm border-none shadow-2xl",
               style: {
-                background: '#1F8D9D',
+                background: '#1B1B1B',
                 color: 'white',
-                border: 'none',
+                padding: '16px 24px',
               },
             }}
           />

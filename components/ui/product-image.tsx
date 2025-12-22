@@ -14,6 +14,7 @@ interface ProductImageProps {
   fallbackSrc?: string
   showPlaceholder?: boolean
   priority?: boolean
+  fill?: boolean
 }
 
 export default function ProductImage({
@@ -25,6 +26,7 @@ export default function ProductImage({
   fallbackSrc = "/product-placeholder.svg",
   showPlaceholder = true,
   priority = false,
+  fill = false,
 }: ProductImageProps) {
   const [imageError, setImageError] = useState(false)
   const [isLoading, setIsLoading] = useState(true)
@@ -54,11 +56,11 @@ export default function ProductImage({
           <p className="text-sm font-medium">No Image Available</p>
           <p className="text-xs text-gray-500 mt-1">Product image not found</p>
         </div>
-        
+
         {/* Decorative elements */}
         <div className="absolute top-4 right-4 w-8 h-8 bg-white/20 rounded-full"></div>
         <div className="absolute bottom-4 left-4 w-6 h-6 bg-white/10 rounded-full"></div>
-        
+
         {/* Subtle pattern overlay */}
         <div className="absolute inset-0 opacity-5">
           <svg width="100%" height="100%" xmlns="http://www.w3.org/2000/svg">
@@ -82,12 +84,13 @@ export default function ProductImage({
           <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/40 to-transparent animate-shimmer"></div>
         </div>
       )}
-      
+
       <Image
         src={src}
         alt={alt}
-        width={width}
-        height={height}
+        width={!fill ? width : undefined}
+        height={!fill ? height : undefined}
+        fill={fill}
         className={cn(
           "transition-all duration-300",
           isLoading ? "opacity-0" : "opacity-100",
@@ -98,7 +101,7 @@ export default function ProductImage({
         priority={priority}
         sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
       />
-      
+
       {/* Error indicator */}
       {imageError && (
         <div className="absolute top-2 right-2 bg-red-100 text-red-600 p-1 rounded-full">

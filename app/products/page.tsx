@@ -2,9 +2,8 @@
 
 import { useState, useEffect } from "react"
 import Link from "next/link"
-import Navigation from "@/components/navigation"
 import { supabase } from "@/lib/supabase"
-import { Search, Filter, Heart, Eye, Star } from "lucide-react"
+import { Search, Filter, Heart, Eye, Star, ChevronRight } from "lucide-react"
 import { motion, AnimatePresence } from "framer-motion"
 import ProductImage from "@/components/ui/product-image"
 import { AddToCartButton } from "@/components/cart/add-to-cart-button"
@@ -34,10 +33,9 @@ export default function ProductsPage() {
   const [loading, setLoading] = useState(true)
   const [searchQuery, setSearchQuery] = useState("")
   const [sortBy, setSortBy] = useState("newest")
-  const [favorites, setFavorites] = useState<Set<string>>(new Set())
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null)
   const [minPrice, setMinPrice] = useState<number>(0)
-  const [maxPrice, setMaxPrice] = useState<number>(10000)
+  const [maxPrice, setMaxPrice] = useState<number>(100000)
 
   useEffect(() => {
     fetchProducts()
@@ -49,17 +47,14 @@ export default function ProductsPage() {
 
   const filterAndSortProducts = () => {
     let filtered = products.filter(product => {
-      // Search filter
       const matchesSearch = product.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
         (product.description && product.description.toLowerCase().includes(searchQuery.toLowerCase()))
-      
-      // Category filter
+
       const matchesCategory = !selectedCategory || product.category_id === selectedCategory
-      
-      // Price filter
+
       const productPrice = product.is_on_sale && product.sale_price ? product.sale_price : product.price
       const matchesPrice = productPrice >= minPrice && productPrice <= maxPrice
-      
+
       return matchesSearch && matchesCategory && matchesPrice
     })
 
@@ -88,29 +83,17 @@ export default function ProductsPage() {
           return 0
         })
         break
-      default: // newest
+      default:
         break
     }
 
     setFilteredProducts(filtered)
   }
 
-  const toggleFavorite = (productId: string) => {
-    const newFavorites = new Set(favorites)
-    if (newFavorites.has(productId)) {
-      newFavorites.delete(productId)
-    } else {
-      newFavorites.add(productId)
-    }
-    setFavorites(newFavorites)
-  }
-
   const fetchProducts = async () => {
     try {
       const { data, error } = await supabase.from("products").select("*").order("created_at", { ascending: false })
-
       if (error) throw error
-
       setProducts(data || [])
     } catch (error) {
       console.error("Error fetching products:", error)
@@ -121,33 +104,15 @@ export default function ProductsPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-[#F9F9F9] via-white to-[#F0F8FF]">
-        <Navigation />
-        <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-12">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="text-center mb-12"
-          >
-            <div className="h-12 bg-gradient-to-r from-gray-200 to-gray-300 rounded-xl w-96 mx-auto mb-4 animate-pulse" />
-            <div className="h-6 bg-gradient-to-r from-gray-200 to-gray-300 rounded-lg w-64 mx-auto animate-pulse" />
-          </motion.div>
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {Array.from({ length: 6 }).map((_, i) => (
-              <motion.div
-                key={i}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: i * 0.1 }}
-              >
-                <div className="bg-white rounded-2xl p-6 shadow-lg border border-gray-100">
-                  <div className="h-48 bg-gradient-to-r from-gray-200 to-gray-300 rounded-xl mb-4 animate-pulse" />
-                  <div className="h-6 bg-gradient-to-r from-gray-200 to-gray-300 rounded-lg mb-2 animate-pulse" />
-                  <div className="h-4 bg-gradient-to-r from-gray-200 to-gray-300 rounded-lg w-3/4 mb-4 animate-pulse" />
-                  <div className="h-8 bg-gradient-to-r from-gray-200 to-gray-300 rounded-lg animate-pulse" />
-                </div>
-              </motion.div>
-            ))}
+      <div className="min-h-screen bg-white">
+        <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-32">
+          <div className="space-y-12">
+            <div className="h-20 bg-gray-50 rounded-sm w-full max-w-2xl animate-pulse" />
+            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-12">
+              {Array.from({ length: 6 }).map((_, i) => (
+                <div key={i} className="aspect-[3/4] bg-gray-50 rounded-sm animate-pulse" />
+              ))}
+            </div>
           </div>
         </div>
       </div>
@@ -155,264 +120,197 @@ export default function ProductsPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[#F9F9F9] via-white to-[#F0F8FF]">
-        <Navigation />
-
-        <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 lg:py-12">
-          {/* Hero Section */}
-          <motion.div
-            initial={{ opacity: 0, y: 30 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8 }}
-            className="text-center mb-16"
-          >
-            <motion.h1
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.2, duration: 0.8 }}
-              className="text-5xl md:text-6xl font-playfair font-bold text-[#1B1B1B] mb-6"
-            >
-              Our <span className="bg-gradient-to-r from-[#1F8D9D] to-[#FDBA2D] bg-clip-text text-transparent">Premium</span> Collection
-            </motion.h1>
-            <motion.p
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.4, duration: 0.8 }}
-              className="text-xl text-gray-600 max-w-3xl mx-auto mb-8"
-            >
-              Discover our range of natural products crafted for health and beauty
-            </motion.p>
-
-            {/* Search and Filter Bar */}
+    <div className="min-h-screen bg-white selection:bg-[#1F8D9D]/20">
+      <main className="pt-32 pb-24">
+        <div className="container mx-auto px-4 sm:px-6 lg:px-8">
+          {/* Editorial Header */}
+          <div className="mb-20">
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.6, duration: 0.8 }}
-              className="max-w-4xl mx-auto"
+              transition={{ duration: 1, ease: [0.16, 1, 0.3, 1] }}
             >
-              <div className="bg-white/80 backdrop-blur-sm rounded-2xl p-4 sm:p-6 shadow-lg border border-white/20">
-                <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 items-stretch sm:items-center">
-                  {/* Search Input */}
-                  <div className="relative flex-1">
-                    <Search className="absolute left-3 sm:left-4 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4 sm:w-5 sm:h-5" aria-hidden="true" />
-                    <label htmlFor="search-input" className="sr-only">Search products</label>
-                    <input
-                      id="search-input"
-                      type="text"
-                      placeholder="Search products..."
-                      value={searchQuery}
-                      onChange={(e) => setSearchQuery(e.target.value)}
-                      aria-label="Search products"
-                      className="w-full pl-10 sm:pl-12 pr-3 sm:pr-4 py-2.5 sm:py-3 text-sm sm:text-base bg-white/50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-[#1F8D9D] focus:border-transparent transition-all duration-300"
-                    />
-                  </div>
-
-                  {/* Sort Dropdown */}
-                  <div className="relative w-full sm:w-auto">
-                    <label htmlFor="sort-select" className="sr-only">Sort products by</label>
-                    <select
-                      id="sort-select"
-                      value={sortBy}
-                      onChange={(e) => setSortBy(e.target.value)}
-                      aria-label="Sort products by"
-                      className="appearance-none w-full sm:w-auto bg-white/50 border border-gray-200 rounded-xl px-3 sm:px-4 py-2.5 sm:py-3 pr-8 sm:pr-10 text-sm sm:text-base focus:ring-2 focus:ring-[#1F8D9D] focus:border-transparent transition-all duration-300"
-                    >
-                      <option value="newest">Newest First</option>
-                      <option value="price-low">Price: Low to High</option>
-                      <option value="price-high">Price: High to Low</option>
-                      <option value="rating">Highest Rated</option>
-                      <option value="sale">On Sale</option>
-                    </select>
-                    <Filter className="absolute right-2 sm:right-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-3 h-3 sm:w-4 sm:h-4 pointer-events-none" />
-                  </div>
-                </div>
-              </div>
-            </motion.div>
-          </motion.div>
-
-          {/* Main Content with Sidebar */}
-          <div className="flex gap-8">
-            {/* Categories Sidebar */}
-            <CategoriesFilter
-              selectedCategory={selectedCategory}
-              onCategoryChange={setSelectedCategory}
-              minPrice={minPrice}
-              maxPrice={maxPrice}
-              onPriceChange={(min, max) => {
-                setMinPrice(min)
-                setMaxPrice(max)
-              }}
-            />
-
-            {/* Products Grid */}
-            <div className="flex-1">
-              <AnimatePresence mode="wait">
-                <motion.div
-                  key={`${searchQuery}-${sortBy}-${selectedCategory}`}
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  exit={{ opacity: 0 }}
-                  transition={{ duration: 0.5 }}
-                  className="grid md:grid-cols-2 lg:grid-cols-3 gap-6"
-                >
-                  {filteredProducts.map((product, index) => (
-                <motion.div
-                  key={product.id}
-                  initial={{ opacity: 0, y: 30 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: index * 0.1, duration: 0.6 }}
-                  whileHover={{ y: -8, transition: { duration: 0.3 } }}
-                  className="group bg-white/80 backdrop-blur-sm rounded-3xl shadow-lg overflow-hidden hover:shadow-2xl transition-all duration-500 relative border border-white/20"
-                >
-                  {/* Sale Badge */}
-                  {product.is_on_sale && product.sale_percentage && (
-                    <motion.div
-                      initial={{ scale: 0, rotate: -12 }}
-                      animate={{ scale: 1, rotate: -12 }}
-                      transition={{ delay: index * 0.1 + 0.3, type: "spring", stiffness: 200 }}
-                      className="absolute top-4 left-4 bg-gradient-to-r from-red-500 to-pink-500 text-white px-4 py-2 rounded-full text-sm font-bold z-20 shadow-lg"
-                    >
-                      -{product.sale_percentage}% OFF
-                    </motion.div>
-                  )}
-
-                  {/* Favorite Button */}
-                  <div className="absolute top-4 right-4 z-20">
-                    <WishlistButton productId={product.id} productName={product.name} />
-                  </div>
-
-                  {/* Product Image */}
-                  <div className="aspect-square overflow-hidden relative">
-                    <ProductImage
-                      src={product.image_url}
-                      alt={product.name}
-                      className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
-                      width={400}
-                      height={400}
-                    />
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-                    
-                    {/* Stock Status */}
-                    {product.stock_quantity !== null && product.stock_quantity <= 0 && (
-                      <div className="absolute inset-0 bg-black/60 flex items-center justify-center">
-                        <Badge variant="destructive" className="text-lg px-4 py-2">
-                          Out of Stock
-                        </Badge>
-                      </div>
-                    )}
-                    
-                    {product.stock_quantity !== null && product.stock_quantity > 0 && product.stock_quantity <= 5 && (
-                      <Badge variant="secondary" className="absolute bottom-4 left-4 bg-yellow-500 text-white">
-                        Only {product.stock_quantity} left!
-                      </Badge>
-                    )}
-                  </div>
-
-                  {/* Product Info */}
-                  <div className="p-4 sm:p-6">
-                    <div className="mb-3">
-                      <h3 className="text-lg sm:text-xl font-bold text-[#1B1B1B] group-hover:text-[#1F8D9D] transition-colors duration-300">
-                        {product.name}
-                      </h3>
-                      
-                      {/* Rating */}
-                      {product.rating && product.rating > 0 && (
-                        <div className="flex items-center gap-2 mt-1">
-                          <div className="flex">
-                            {[1, 2, 3, 4, 5].map((star) => (
-                              <Star
-                                key={star}
-                                className={`h-3 w-3 ${
-                                  star <= Math.round(product.rating!)
-                                    ? "fill-yellow-400 text-yellow-400"
-                                    : "text-gray-300"
-                                }`}
-                              />
-                            ))}
-                          </div>
-                          <span className="text-xs text-gray-600">
-                            ({product.review_count || 0})
-                          </span>
-                        </div>
-                      )}
-                    </div>
-
-                    <p className="text-sm sm:text-base text-gray-600 mb-4 sm:mb-6 line-clamp-2">{product.description}</p>
-
-                    {/* Price Section */}
-                    <div className="flex items-center justify-between mb-4 sm:mb-6">
-                      <div className="flex items-center space-x-2 sm:space-x-3">
-                        {product.is_on_sale && product.sale_price ? (
-                          <>
-                            <span className="text-sm sm:text-lg text-gray-400 line-through">PKR {product.price.toFixed(0)}</span>
-                            <span className="text-xl sm:text-2xl font-bold bg-gradient-to-r from-[#1F8D9D] to-[#186F7B] bg-clip-text text-transparent">
-                              PKR {product.sale_price.toFixed(0)}
-                            </span>
-                          </>
-                        ) : (
-                          <span className="text-xl sm:text-2xl font-bold bg-gradient-to-r from-[#1F8D9D] to-[#186F7B] bg-clip-text text-transparent">
-                            PKR {product.price.toFixed(0)}
-                          </span>
-                        )}
-                      </div>
-                    </div>
-
-                    {/* Action Buttons */}
-                    <div className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-3">
-                      <Link
-                        href={`/products/${product.id}`}
-                        className="flex-1 flex items-center justify-center space-x-2 px-3 sm:px-4 py-2.5 sm:py-3 text-sm sm:text-base bg-gray-100 hover:bg-gray-200 text-[#1F8D9D] rounded-xl transition-all duration-300 group/btn"
-                      >
-                        <Eye className="w-3 h-3 sm:w-4 sm:h-4 group-hover/btn:scale-110 transition-transform duration-300" />
-                        <span className="font-medium">View</span>
-                      </Link>
-                      {product.stock_quantity !== null && product.stock_quantity <= 0 ? (
-                        <button
-                          disabled
-                          className="flex-1 rounded-xl shadow-lg bg-gray-300 text-gray-500 cursor-not-allowed px-3 sm:px-4 py-2.5 sm:py-3 text-sm sm:text-base"
-                        >
-                          Out of Stock
-                        </button>
-                      ) : (
-                        <AddToCartButton
-                          product={product}
-                          className="flex-1 rounded-xl shadow-lg hover:shadow-xl"
-                        />
-                      )}
-                    </div>
-                  </div>
-                </motion.div>
-              ))}
-            </motion.div>
-          </AnimatePresence>
-
-          {/* No Products Message */}
-          {filteredProducts.length === 0 && !loading && (
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="text-center py-16"
-            >
-              <div className="w-24 h-24 bg-gradient-to-r from-[#1F8D9D] to-[#FDBA2D] rounded-full flex items-center justify-center mx-auto mb-6">
-                <Search className="w-12 h-12 text-white" />
-              </div>
-              <h3 className="text-2xl font-bold text-[#1B1B1B] mb-2">No products found</h3>
-              <p className="text-xl text-gray-600 mb-6">
-                {searchQuery ? `No products match "${searchQuery}"` : "No products available at the moment."}
+              <h1 className="text-7xl md:text-9xl font-playfair font-black text-[#1B1B1B] leading-[0.8] tracking-tighter mb-8">
+                Curated<br />Essential.
+              </h1>
+              <div className="h-[2px] w-24 bg-[#1F8D9D] mb-8" />
+              <p className="text-xs font-bold tracking-[0.4em] uppercase text-gray-400 max-w-md leading-relaxed">
+                A study in timeless quality and modern utility. Discover pieces designed to elevate your daily routine.
               </p>
-              {searchQuery && (
-                <button
-                  onClick={() => setSearchQuery("")}
-                  className="px-6 py-3 bg-gradient-to-r from-[#1F8D9D] to-[#186F7B] text-white rounded-xl hover:shadow-lg transition-all duration-300"
-                >
-                  Clear Search
-                </button>
-              )}
             </motion.div>
-          )}
+          </div>
+
+          {/* Top Control Bar */}
+          <div className="flex flex-col lg:flex-row gap-8 items-start lg:items-center justify-between mb-16 pb-8 border-b border-gray-100">
+            <div className="flex flex-wrap items-center gap-4">
+              <div className="relative group">
+                <Search className="absolute left-0 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-300 group-focus-within:text-[#1B1B1B] transition-colors" />
+                <input
+                  type="text"
+                  placeholder="Search catalog..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="pl-8 py-2 bg-transparent border-none text-[10px] font-bold tracking-[0.2em] uppercase focus:outline-none focus:ring-0 placeholder:text-gray-300 min-w-[200px]"
+                />
+              </div>
+
+              <div className="h-4 w-[1px] bg-gray-100 hidden sm:block" />
+
+              <div className="flex items-center space-x-2">
+                <span className="text-[10px] font-bold tracking-[0.2em] uppercase text-gray-300">Sort:</span>
+                <select
+                  value={sortBy}
+                  onChange={(e) => setSortBy(e.target.value)}
+                  className="bg-transparent border-none text-[10px] font-bold tracking-[0.2em] uppercase focus:outline-none focus:ring-0 cursor-pointer hover:text-[#1F8D9D] transition-colors"
+                >
+                  <option value="newest">Recent Arrivals</option>
+                  <option value="price-low">Price: Low to High</option>
+                  <option value="price-high">Price: High to Low</option>
+                  <option value="rating">Top Rated</option>
+                  <option value="sale">Promotions</option>
+                </select>
+              </div>
+            </div>
+
+            <div className="text-[10px] font-bold tracking-[0.2em] uppercase text-gray-400">
+              Displaying {filteredProducts.length} Results
+            </div>
+          </div>
+
+          <div className="flex flex-col lg:grid lg:grid-cols-12 gap-16">
+            {/* Minimal Filter Sidebar */}
+            <div className="lg:col-span-3 space-y-12">
+              <CategoriesFilter
+                selectedCategory={selectedCategory}
+                onCategoryChange={setSelectedCategory}
+                minPrice={minPrice}
+                maxPrice={maxPrice}
+                onPriceChange={(min, max) => {
+                  setMinPrice(min)
+                  setMaxPrice(max)
+                }}
+              />
+
+              <div className="p-8 bg-[#F9F9F9] rounded-sm">
+                <p className="text-[10px] font-bold tracking-[0.3em] uppercase text-[#1B1B1B] mb-4">Quality Oath</p>
+                <p className="text-[11px] text-gray-500 font-light leading-relaxed">
+                  Every product in our catalog undergoes rigorous quality assessment. We prioritize sustainable sourcing and architectural design.
+                </p>
+              </div>
+            </div>
+
+            {/* Editorial Grid */}
+            <div className="lg:col-span-9">
+              <AnimatePresence mode="wait">
+                {filteredProducts.length > 0 ? (
+                  <motion.div
+                    key="grid"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                    className="grid md:grid-cols-2 lg:grid-cols-3 gap-y-16 gap-x-12"
+                  >
+                    {filteredProducts.map((product, index) => (
+                      <motion.div
+                        key={product.id}
+                        layout
+                        initial={{ opacity: 0, y: 30 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, scale: 0.95 }}
+                        transition={{ delay: index * 0.05, duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
+                        className="group"
+                      >
+                        <Link href={`/products/${product.id}`} className="block space-y-6">
+                          <div className="relative aspect-[3/4] bg-[#F9F9F9] rounded-sm overflow-hidden shadow-sm group-hover:shadow-2xl transition-all duration-700">
+                            <img
+                              src={product.image_url || ''}
+                              alt={product.name}
+                              className="w-full h-full object-cover transition-all duration-1000 ease-in-out group-hover:scale-105"
+                            />
+
+                            {/* Sophisticated Badge */}
+                            <div className="absolute top-6 left-6 flex flex-col gap-2">
+                              {product.is_on_sale && (
+                                <div className="bg-[#1B1B1B] text-white text-[9px] font-bold tracking-[0.2em] uppercase px-3 py-1.5 rounded-sm">
+                                  Edition Price
+                                </div>
+                              )}
+                              {product.stock_quantity !== null && product.stock_quantity <= 0 && (
+                                <div className="bg-white/90 backdrop-blur-sm text-[#1B1B1B] text-[9px] font-bold tracking-[0.2em] uppercase px-3 py-1.5 rounded-sm border border-gray-100">
+                                  Archived
+                                </div>
+                              )}
+                            </div>
+
+                            {/* Hover Action Overlay */}
+                            <div className="absolute inset-x-0 bottom-0 p-6 bg-gradient-to-t from-black/20 to-transparent translate-y-full group-hover:translate-y-0 transition-transform duration-700 flex justify-end">
+                              <WishlistButton productId={product.id} productName={product.name} />
+                            </div>
+                          </div>
+
+                          <div className="space-y-2">
+                            <div className="flex justify-between items-start">
+                              <h3 className="text-lg font-playfair font-black tracking-tight text-[#1B1B1B]">
+                                {product.name}
+                              </h3>
+                              <p className="text-sm font-bold text-[#1B1B1B]">
+                                {product.is_on_sale && product.sale_price ? (
+                                  <span className="flex flex-col items-end">
+                                    <span className="text-gray-400 text-[10px] line-through decoration-[1px]">₨ {product.price.toLocaleString()}</span>
+                                    <span>₨ {product.sale_price.toLocaleString()}</span>
+                                  </span>
+                                ) : (
+                                  <span>₨ {product.price.toLocaleString()}</span>
+                                )}
+                              </p>
+                            </div>
+
+                            <p className="text-[10px] font-bold tracking-[0.2em] uppercase text-gray-400">
+                              {product.is_on_sale ? `Limited Release` : `Core Collection`}
+                            </p>
+                          </div>
+                        </Link>
+
+                        <div className="mt-6 pt-6 border-t border-gray-50 opacity-0 group-hover:opacity-100 transition-opacity duration-500">
+                          {product.stock_quantity !== null && product.stock_quantity > 0 && (
+                            <AddToCartButton
+                              product={product}
+                              className="w-full"
+                            />
+                          )}
+                        </div>
+                      </motion.div>
+                    ))}
+                  </motion.div>
+                ) : (
+                  <motion.div
+                    key="empty"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                    className="flex flex-col items-center justify-center py-40 border-2 border-dashed border-gray-100 rounded-sm"
+                  >
+                    <Search className="w-12 h-12 text-gray-200 mb-6" />
+                    <h3 className="text-2xl font-playfair font-black text-[#1B1B1B] mb-2">No matching pieces.</h3>
+                    <p className="text-[10px] font-bold tracking-[0.2em] uppercase text-gray-400 mb-8">Refine your criteria and explore again.</p>
+                    <button
+                      onClick={() => {
+                        setSearchQuery("")
+                        setSelectedCategory(null)
+                        setMinPrice(0)
+                        setMaxPrice(100000)
+                      }}
+                      className="px-8 py-3 bg-[#1B1B1B] text-white text-[10px] font-bold tracking-[0.3em] uppercase hover:bg-[#1F8D9D] transition-colors"
+                    >
+                      Clear All Filters
+                    </button>
+                  </motion.div>
+                )}
+              </AnimatePresence>
             </div>
           </div>
         </div>
-      </div>
+      </main>
+    </div>
   )
 }

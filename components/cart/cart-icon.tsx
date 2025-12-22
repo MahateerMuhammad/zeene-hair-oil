@@ -15,16 +15,16 @@ export function CartIcon() {
                 className="relative p-2 text-[#1B1B1B] hover:text-[#1F8D9D] transition-colors group"
                 aria-label="Open cart"
             >
-                <ShoppingBag className="w-6 h-6 group-hover:scale-110 transition-transform duration-300" />
+                <ShoppingBag className="w-5 h-5 group-hover:scale-110 transition-transform duration-500" />
                 <AnimatePresence>
                     {cartCount > 0 && (
                         <motion.span
-                            initial={{ scale: 0 }}
-                            animate={{ scale: 1 }}
-                            exit={{ scale: 0 }}
-                            className="absolute -top-1 -right-1 bg-[#1F8D9D] text-white text-[10px] font-bold w-5 h-5 flex items-center justify-center rounded-full border-2 border-white shadow-sm"
+                            initial={{ scale: 0, opacity: 0 }}
+                            animate={{ scale: 1, opacity: 1 }}
+                            exit={{ scale: 0, opacity: 0 }}
+                            className="absolute top-0 right-0 bg-[#1F8D9D] text-white text-[9px] font-bold w-4 h-4 flex items-center justify-center rounded-sm shadow-lg border border-white/20"
                         >
-                            {cartCount > 99 ? "99+" : cartCount}
+                            {cartCount > 99 ? "99" : cartCount}
                         </motion.span>
                     )}
                 </AnimatePresence>

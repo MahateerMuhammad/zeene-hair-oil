@@ -1,7 +1,6 @@
 "use client"
 
-import Navigation from "@/components/navigation"
-import { Mail, Phone, Instagram, Clock, Send } from "lucide-react"
+import { Mail, Phone, Instagram, Clock, Send, ArrowRight } from "lucide-react"
 import { motion } from "framer-motion"
 import { useState } from "react"
 import { toast } from "sonner"
@@ -51,255 +50,202 @@ export default function ContactPage() {
       setIsSubmitting(false)
     }
   }
+
   return (
-    <div className="min-h-screen bg-[#F9F9F9]">
-      <Navigation />
+    <div className="min-h-screen bg-white selection:bg-[#1F8D9D]/20">
+      <main className="pt-32 pb-24">
+        <div className="container mx-auto px-4 sm:px-6 lg:px-8">
+          {/* Section Header */}
+          <div className="mb-24">
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 1, ease: [0.16, 1, 0.3, 1] }}
+            >
+              <p className="text-[10px] font-bold tracking-[0.4em] uppercase text-[#1F8D9D] mb-6">Concierge</p>
+              <h1 className="text-7xl md:text-9xl font-playfair font-black text-[#1B1B1B] leading-[0.8] tracking-tighter mb-12">
+                Let's Start<br />A Dialogue.
+              </h1>
+              <div className="h-[2px] w-24 bg-[#1B1B1B] mb-12" />
+              <p className="text-gray-500 font-light text-xl max-w-2xl leading-relaxed">
+                Whether you have a product inquiry or simply wish to discuss architectural aesthetics, our team is dedicated to providing a seamless experience.
+              </p>
+            </motion.div>
+          </div>
 
-      <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 lg:py-12">
-        <motion.div 
-          className="text-center mb-12"
-          initial={{ opacity: 0, y: 30 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6 }}
-        >
-          <h1 className="text-4xl md:text-5xl font-playfair font-bold text-[#1B1B1B] mb-4">
-            Get in <span className="text-gradient">Touch</span>
-          </h1>
-          <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-            Have questions about our products? We're here to help you on your hair care journey.
-          </p>
-        </motion.div>
-
-        <div className="grid lg:grid-cols-2 gap-12">
-          {/* Contact Information */}
-          <motion.div 
-            className="bg-white rounded-2xl shadow-lg p-8"
-            initial={{ opacity: 0, x: -30 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.6, delay: 0.2 }}
-          >
-            <h2 className="text-2xl font-semibold text-[#1B1B1B] mb-6">Contact Information</h2>
-
-            <div className="space-y-6">
-              {[
-                {
-                  icon: <Mail className="w-6 h-6 text-[#1F8D9D]" />,
-                  title: "Email",
-                  content: "zeene.contact@gmail.com",
-                  href: "mailto:zeene.contact@gmail.com",
-                  bgColor: "bg-[#1F8D9D]/10",
-                  hoverColor: "hover:text-[#1F8D9D]"
-                },
-                {
-                  icon: <Phone className="w-6 h-6 text-[#3E7346]" />,
-                  title: "WhatsApp",
-                  content: "+92 324 1715470",
-                  href: "https://wa.me/923241715470",
-                  bgColor: "bg-[#3E7346]/10",
-                  hoverColor: "hover:text-[#3E7346]"
-                },
-                {
-                  icon: <Instagram className="w-6 h-6 text-[#FDBA2D]" />,
-                  title: "Instagram",
-                  content: "@zeene.store",
-                  href: "https://www.instagram.com/zeene.store?igsh=c2J0a20zMDM4bmI1",
-                  bgColor: "bg-[#FDBA2D]/10",
-                  hoverColor: "hover:text-[#FDBA2D]"
-                }
-              ].map((item, index) => (
-                <motion.div 
-                  key={index}
-                  className="flex items-start space-x-4"
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.4, delay: 0.3 + index * 0.1 }}
-                  whileHover={{ scale: 1.02 }}
-                >
-                  <div className={`${item.bgColor} p-3 rounded-full`}>
-                    {item.icon}
-                  </div>
-                  <div>
-                    <h3 className="font-semibold text-[#1B1B1B] mb-1">{item.title}</h3>
-                    <a
-                      href={item.href}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className={`text-gray-600 ${item.hoverColor} transition-colors`}
-                    >
-                      {item.content}
+          <div className="grid lg:grid-cols-12 gap-24">
+            {/* Contact Details - Editorial List */}
+            <div className="lg:col-span-5 space-y-20">
+              <div className="space-y-12">
+                {[
+                  {
+                    label: "Email Inquiry",
+                    value: "zeene.contact@gmail.com",
+                    href: "mailto:zeene.contact@gmail.com",
+                    icon: Mail
+                  },
+                  {
+                    label: "Direct Connection",
+                    value: "+92 324 1715470",
+                    href: "https://wa.me/923241715470",
+                    icon: Phone
+                  },
+                  {
+                    label: "Digital Studio",
+                    value: "instagram.com/zeene.store",
+                    href: "https://www.instagram.com/zeene.store",
+                    icon: Instagram
+                  }
+                ].map((item, index) => (
+                  <motion.div
+                    key={index}
+                    initial={{ opacity: 0, x: -20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: 0.2 + index * 0.1, duration: 0.8 }}
+                    className="group"
+                  >
+                    <a href={item.href} target="_blank" rel="noopener noreferrer" className="block space-y-3">
+                      <p className="text-[10px] font-bold tracking-[0.3em] uppercase text-gray-400 group-hover:text-[#1F8D9D] transition-colors flex items-center">
+                        <item.icon size={12} className="mr-3" />
+                        {item.label}
+                      </p>
+                      <div className="flex items-center justify-between border-b border-gray-100 pb-4 group-hover:border-[#1F8D9D] transition-all">
+                        <span className="text-2xl font-playfair font-black text-[#1B1B1B]">{item.value}</span>
+                        <ArrowRight className="w-5 h-5 opacity-0 -translate-x-4 group-hover:opacity-100 group-hover:translate-x-0 transition-all text-[#1F8D9D]" />
+                      </div>
                     </a>
-                  </div>
-                </motion.div>
-              ))}
+                  </motion.div>
+                ))}
+              </div>
 
-              <motion.div 
-                className="flex items-start space-x-4"
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.4, delay: 0.6 }}
-              >
-                <div className="bg-[#1F8D9D]/10 p-3 rounded-full">
-                  <Clock className="w-6 h-6 text-[#1F8D9D]" />
-                </div>
-                <div>
-                  <h3 className="font-semibold text-[#1B1B1B] mb-1">Business Hours</h3>
-                  <div className="text-gray-600 space-y-1">
-                    <p>Monday - Friday: 9:00 AM - 6:00 PM</p>
-                    <p>Saturday: 10:00 AM - 4:00 PM</p>
-                    <p>Sunday: Closed</p>
+              <div className="p-12 bg-[#F9F9F9] rounded-sm space-y-6">
+                <p className="text-[10px] font-bold tracking-[0.3em] uppercase text-[#1B1B1B]">Business Hours</p>
+                <div className="grid grid-cols-2 gap-8 text-[11px] font-bold tracking-[0.1em] uppercase text-gray-500">
+                  <div className="space-y-2">
+                    <p className="text-gray-300">Weekdays</p>
+                    <p className="text-[#1B1B1B]">09:00 — 18:00</p>
+                  </div>
+                  <div className="space-y-2">
+                    <p className="text-gray-300">Saturday</p>
+                    <p className="text-[#1B1B1B]">10:00 — 16:00</p>
                   </div>
                 </div>
+              </div>
+            </div>
+
+            {/* Contact Form - High Contrast */}
+            <div className="lg:col-span-7">
+              <motion.div
+                initial={{ opacity: 0, y: 30 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.4, duration: 1 }}
+                className="bg-white"
+              >
+                <form onSubmit={handleSubmit} className="space-y-12">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
+                    <div className="space-y-3">
+                      <label className="text-[10px] font-bold tracking-[0.3em] uppercase text-gray-400">Your Identity</label>
+                      <input
+                        type="text"
+                        name="name"
+                        value={formData.name}
+                        onChange={handleInputChange}
+                        required
+                        className="w-full bg-transparent border-b-2 border-gray-100 py-4 text-xl font-playfair font-black focus:outline-none focus:border-[#1B1B1B] transition-colors placeholder:text-gray-200"
+                        placeholder="Name (e.g., John Smith)"
+                      />
+                    </div>
+                    <div className="space-y-3">
+                      <label className="text-[10px] font-bold tracking-[0.3em] uppercase text-gray-400">Digital Address</label>
+                      <input
+                        type="email"
+                        name="email"
+                        value={formData.email}
+                        onChange={handleInputChange}
+                        required
+                        className="w-full bg-transparent border-b-2 border-gray-100 py-4 text-xl font-playfair font-black focus:outline-none focus:border-[#1B1B1B] transition-colors placeholder:text-gray-200"
+                        placeholder="john@example.com"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="space-y-3">
+                    <label className="text-[10px] font-bold tracking-[0.3em] uppercase text-gray-400">Subject Of Interest</label>
+                    <input
+                      type="text"
+                      name="subject"
+                      value={formData.subject}
+                      onChange={handleInputChange}
+                      required
+                      className="w-full bg-transparent border-b-2 border-gray-100 py-4 text-xl font-playfair font-black focus:outline-none focus:border-[#1B1B1B] transition-colors placeholder:text-gray-200"
+                      placeholder="Product Inquiry / Partnership"
+                    />
+                  </div>
+
+                  <div className="space-y-3">
+                    <label className="text-[10px] font-bold tracking-[0.3em] uppercase text-gray-400">Elaborate Your Message</label>
+                    <textarea
+                      rows={4}
+                      name="message"
+                      value={formData.message}
+                      onChange={handleInputChange}
+                      required
+                      className="w-full bg-transparent border-b-2 border-gray-100 py-4 text-xl font-playfair font-black focus:outline-none focus:border-[#1B1B1B] transition-colors placeholder:text-gray-200 resize-none"
+                      placeholder="Your detailed inquiry here..."
+                    />
+                  </div>
+
+                  <motion.button
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                    disabled={isSubmitting}
+                    className="w-full h-20 bg-[#1B1B1B] text-white text-[12px] font-bold tracking-[0.5em] uppercase hover:bg-[#1F8D9D] transition-all duration-700 shadow-2xl flex items-center justify-center space-x-4 disabled:opacity-50"
+                  >
+                    {isSubmitting ? (
+                      <div className="animate-spin rounded-full h-5 w-5 border-2 border-white/20 border-t-white" />
+                    ) : (
+                      <>
+                        <span>Submit Dialogue</span>
+                        <Send className="w-5 h-5" />
+                      </>
+                    )}
+                  </motion.button>
+                </form>
               </motion.div>
             </div>
-          </motion.div>
-
-          {/* Contact Form */}
-          <motion.div 
-            className="bg-white rounded-2xl shadow-lg p-8"
-            initial={{ opacity: 0, x: 30 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.6, delay: 0.4 }}
-          >
-            <h2 className="text-2xl font-semibold text-[#1B1B1B] mb-6">Send us a Message</h2>
-
-            <form onSubmit={handleSubmit} className="space-y-6">
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.4, delay: 0.5 }}
-              >
-                <label className="block text-sm font-medium text-[#1B1B1B] mb-2">Name</label>
-                <input
-                  type="text"
-                  name="name"
-                  value={formData.name}
-                  onChange={handleInputChange}
-                  required
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#1F8D9D] focus:border-transparent transition-all duration-300"
-                  placeholder="Your full name"
-                />
-              </motion.div>
-
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.4, delay: 0.6 }}
-              >
-                <label className="block text-sm font-medium text-[#1B1B1B] mb-2">Email</label>
-                <input
-                  type="email"
-                  name="email"
-                  value={formData.email}
-                  onChange={handleInputChange}
-                  required
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#1F8D9D] focus:border-transparent transition-all duration-300"
-                  placeholder="your.email@example.com"
-                />
-              </motion.div>
-
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.4, delay: 0.7 }}
-              >
-                <label className="block text-sm font-medium text-[#1B1B1B] mb-2">Subject</label>
-                <input
-                  type="text"
-                  name="subject"
-                  value={formData.subject}
-                  onChange={handleInputChange}
-                  required
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#1F8D9D] focus:border-transparent transition-all duration-300"
-                  placeholder="What's this about?"
-                />
-              </motion.div>
-
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.4, delay: 0.8 }}
-              >
-                <label className="block text-sm font-medium text-[#1B1B1B] mb-2">Message</label>
-                <textarea
-                  rows={5}
-                  name="message"
-                  value={formData.message}
-                  onChange={handleInputChange}
-                  required
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#1F8D9D] focus:border-transparent transition-all duration-300 resize-none"
-                  placeholder="Tell us how we can help you..."
-                />
-              </motion.div>
-
-              <motion.button
-                type="submit"
-                disabled={isSubmitting}
-                className="w-full bg-[#1F8D9D] hover:bg-[#186F7B] disabled:bg-gray-400 text-white px-6 py-3 rounded-lg font-semibold transition-all duration-300 transform hover:scale-105 disabled:hover:scale-100 flex items-center justify-center space-x-2"
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.4, delay: 0.9 }}
-                whileHover={{ scale: isSubmitting ? 1 : 1.05 }}
-                whileTap={{ scale: isSubmitting ? 1 : 0.95 }}
-              >
-                {isSubmitting ? (
-                  <>
-                    <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
-                    <span>Sending...</span>
-                  </>
-                ) : (
-                  <>
-                    <Send className="w-5 h-5" />
-                    <span>Send Message</span>
-                  </>
-                )}
-              </motion.button>
-            </form>
-          </motion.div>
-        </div>
-
-        {/* FAQ Section */}
-        <motion.div 
-          className="mt-16 bg-white rounded-2xl shadow-lg p-8"
-          initial={{ opacity: 0, y: 30 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6, delay: 0.8 }}
-        >
-          <h2 className="text-2xl font-semibold text-[#1B1B1B] mb-6 text-center">Frequently Asked Questions</h2>
-
-          <div className="grid md:grid-cols-2 gap-8">
-            {[
-              {
-                question: "How do I place an order?",
-                answer: "Simply browse our products, click \"Order Now\", fill in your details, and we'll deliver to your doorstep with cash on delivery."
-              },
-              {
-                question: "What payment methods do you accept?",
-                answer: "We currently accept cash on delivery (COD) for all orders within Pakistan."
-              },
-              {
-                question: "How long does delivery take?",
-                answer: "Delivery typically takes 2-5 business days depending on your location within Pakistan."
-              },
-              {
-                question: "Are your products natural?",
-                answer: "Yes! All ZEENE hair oils are made with 100% natural ingredients, free from harmful chemicals."
-              }
-            ].map((faq, index) => (
-              <motion.div
-                key={index}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.4, delay: 1 + index * 0.1 }}
-                whileHover={{ scale: 1.02 }}
-                className="p-4 rounded-lg hover:bg-gray-50 transition-colors duration-300"
-              >
-                <h3 className="font-semibold text-[#1B1B1B] mb-2">{faq.question}</h3>
-                <p className="text-gray-600 mb-4">{faq.answer}</p>
-              </motion.div>
-            ))}
           </div>
-        </motion.div>
-      </div>
+
+          {/* Minimalist FAQ / Common Threads */}
+          <div className="mt-40 pt-40 border-t border-gray-100">
+            <h2 className="text-4xl font-playfair font-black text-[#1B1B1B] text-center mb-20 leading-tight">Frequently Discussed.</h2>
+            <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-12">
+              {[
+                {
+                  q: "Execution Time?",
+                  a: "Domestic deliveries are finalized within 2-5 business cycles."
+                },
+                {
+                  q: "Sourcing Policy?",
+                  a: "Strict adherence to 100% natural, botanically derived ingredients."
+                },
+                {
+                  q: "Transaction Types?",
+                  a: "Primarily Cash on Delivery (COD) for localized trust and security."
+                },
+                {
+                  q: "Return Protocol?",
+                  a: "We offer a sophisticated return window for unopened architectural pieces."
+                }
+              ].map((faq, index) => (
+                <div key={index} className="space-y-4">
+                  <p className="text-[10px] font-bold tracking-[0.3em] uppercase text-[#1F8D9D]">{faq.q}</p>
+                  <p className="text-xs text-gray-500 font-light leading-relaxed">{faq.a}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </main>
     </div>
   )
 }
