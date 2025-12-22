@@ -32,6 +32,14 @@ interface Product {
   sku: string | null
 }
 
+interface Variant {
+  id: string
+  name: string
+  sku: string | null
+  price_override: number | null
+  stock_quantity: number | null
+}
+
 export default function ProductDetailPage() {
   const params = useParams()
   const router = useRouter()
@@ -40,6 +48,8 @@ export default function ProductDetailPage() {
   const [imageZoomed, setImageZoomed] = useState(false)
   const [activeTab, setActiveTab] = useState<'description' | 'reviews'>('description')
   const [quantity, setQuantity] = useState(1)
+  const [variants, setVariants] = useState<Variant[]>([])
+  const [selectedVariant, setSelectedVariant] = useState<Variant | null>(null)
 
   const isMobile = useIsMobile()
 
@@ -59,6 +69,19 @@ export default function ProductDetailPage() {
 
       if (error) throw error
       setProduct(data)
+      // Fetch variants
+      const { data: variantData, error: variantError } = await supabase
+        .from("product_variants")
+        .select("*")
+        .eq("product_id", id)
+        .eq("is_active", true)
+
+      if (!variantError && variantData) {
+        setVariants(variantData)
+        if (variantData.length > 0) {
+          setSelectedVariant(variantData[0])
+        }
+      }
     } catch (error) {
       console.error("Error fetching product:", error)
       router.push("/products")
@@ -242,11 +265,10 @@ export default function ProductDetailPage() {
                         {[1, 2, 3, 4, 5].map((star) => (
                           <Star
                             key={star}
-                            className={`h-5 w-5 ${
-                              star <= Math.round(product.rating!)
-                                ? "fill-yellow-400 text-yellow-400"
-                                : "text-gray-300"
-                            }`}
+                            className={`h-5 w-5 ${star <= Math.round(product.rating!)
+                              ? "fill-yellow-400 text-yellow-400"
+                              : "text-gray-300"
+                              }`}
                           />
                         ))}
                       </div>
@@ -255,7 +277,7 @@ export default function ProductDetailPage() {
                       </span>
                     </div>
                   )}
-                  
+
                   {/* Stock Status */}
                   {product.stock_quantity !== null && (
                     <div>
@@ -337,8 +359,8 @@ export default function ProductDetailPage() {
                       key={tab.key}
                       onClick={() => setActiveTab(tab.key as any)}
                       className={`flex-1 flex items-center justify-center space-x-2 py-4 px-6 font-medium transition-all duration-300 ${activeTab === tab.key
-                          ? 'bg-[#1F8D9D] text-white shadow-lg'
-                          : 'text-gray-600 hover:text-[#1F8D9D] hover:bg-gray-50'
+                        ? 'bg-[#1F8D9D] text-white shadow-lg'
+                        : 'text-gray-600 hover:text-[#1F8D9D] hover:bg-gray-50'
                         }`}
                     >
                       {tab.icon}
@@ -368,6 +390,39 @@ export default function ProductDetailPage() {
                   </AnimatePresence>
                 </div>
               </motion.div>
+
+              {/* Variant Selector */}
+              {variants.length > 0 && (
+                <motion.div
+                  className="space-y-4"
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.65 }}
+                >
+                  <label className="text-sm font-bold text-gray-900 uppercase tracking-wider block">
+                    Choose Option
+                  </label>
+                  <div className="flex flex-wrap gap-3">
+                    {variants.map((v) => (
+                      <button
+                        key={v.id}
+                        onClick={() => setSelectedVariant(v)}
+                        className={`px-4 py-2 rounded-xl border-2 transition-all text-sm font-medium ${selectedVariant?.id === v.id
+                          ? 'border-[#1F8D9D] bg-[#1F8D9D]/5 text-[#1F8D9D] shadow-sm'
+                          : 'border-gray-200 text-gray-600 hover:border-gray-300'
+                          }`}
+                      >
+                        {v.name}
+                        {v.price_override && v.price_override !== 0 ? (
+                          <span className="ml-2 py-0.5 px-2 bg-gray-100 rounded-full text-[10px] text-gray-500">
+                            +{v.price_override.toFixed(0)}
+                          </span>
+                        ) : null}
+                      </button>
+                    ))}
+                  </div>
+                </motion.div>
+              )}
 
               {/* Quantity Selector and Add to Cart */}
               <motion.div
@@ -427,10 +482,10 @@ export default function ProductDetailPage() {
                         {product.is_on_sale && product.sale_price ? (
                           <>
                             <div className="text-sm text-gray-500 line-through font-medium">
-                              PKR {(product.price * quantity).toFixed(0)}
+                              PKR {((product.price + (selectedVariant?.price_override || 0)) * quantity).toFixed(0)}
                             </div>
                             <div className="text-2xl sm:text-3xl font-bold text-[#1F8D9D]">
-                              PKR {(product.sale_price * quantity).toFixed(0)}
+                              PKR {((product.sale_price + (selectedVariant?.price_override || 0)) * quantity).toFixed(0)}
                             </div>
                             <motion.div
                               className="text-xs sm:text-sm text-green-600 font-bold bg-green-50 px-2 sm:px-3 py-1 rounded-full inline-block mt-1"
@@ -443,7 +498,7 @@ export default function ProductDetailPage() {
                           </>
                         ) : (
                           <span className="text-2xl sm:text-3xl font-bold text-[#1F8D9D]">
-                            PKR {(product.price * quantity).toFixed(0)}
+                            PKR {((product.price + (selectedVariant?.price_override || 0)) * quantity).toFixed(0)}
                           </span>
                         )}
                       </div>
@@ -464,6 +519,7 @@ export default function ProductDetailPage() {
                       <AddToCartButton
                         product={product}
                         quantity={quantity}
+                        selectedVariant={selectedVariant}
                         className="flex-1 py-4 sm:py-5 text-lg"
                       />
                     )}
@@ -527,7 +583,7 @@ export default function ProductDetailPage() {
                   <p className="text-gray-700 leading-relaxed whitespace-pre-line">
                     {product.description || 'No description available.'}
                   </p>
-                  
+
                   {product.sku && (
                     <div className="mt-6 pt-6 border-t">
                       <p className="text-sm text-gray-600">

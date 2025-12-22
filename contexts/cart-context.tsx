@@ -11,13 +11,15 @@ export interface CartItem {
     image_url: string | null
     quantity: number
     maxQuantity?: number
+    variantId?: string
+    variantName?: string
 }
 
 interface CartContextType {
     items: CartItem[]
-    addToCart: (product: any, quantity?: number) => void
-    removeFromCart: (productId: string) => void
-    updateQuantity: (productId: string, quantity: number) => void
+    addToCart: (product: any, quantity?: number, variant?: any) => void
+    removeFromCart: (itemId: string) => void
+    updateQuantity: (itemId: string, quantity: number) => void
     clearCart: () => void
     cartTotal: number
     cartCount: number
@@ -52,52 +54,61 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
         }
     }, [items, isInitialized])
 
-    const addToCart = useCallback((product: any, quantity: number = 1) => {
+    const addToCart = useCallback((product: any, quantity: number = 1, variant?: any) => {
         setItems((prevItems) => {
-            const existingItem = prevItems.find((item) => item.productId === product.id)
+            const existingItem = prevItems.find((item) =>
+                variant
+                    ? item.productId === product.id && item.variantId === variant.id
+                    : item.productId === product.id && !item.variantId
+            )
 
-            const price = product.is_on_sale && product.sale_price ? product.sale_price : product.price
+            const basePrice = product.is_on_sale && product.sale_price ? product.sale_price : product.price
+            const finalPrice = variant?.price_override ? basePrice + parseFloat(variant.price_override) : basePrice
 
             if (existingItem) {
-                toast.success(`Updated quantity for ${product.name}`)
+                toast.success(`Updated quantity for ${product.name}${variant ? ` (${variant.name})` : ""}`)
                 return prevItems.map((item) =>
-                    item.productId === product.id
+                    (variant
+                        ? item.productId === product.id && item.variantId === variant.id
+                        : item.productId === product.id && !item.variantId)
                         ? { ...item, quantity: item.quantity + quantity }
                         : item
                 )
             }
 
-            toast.success(`Added ${product.name} to cart`)
+            toast.success(`Added ${product.name}${variant ? ` (${variant.name})` : ""} to cart`)
             return [
                 ...prevItems,
                 {
-                    id: `${product.id}-${Date.now()}`,
+                    id: variant ? `${product.id}-${variant.id}-${Date.now()}` : `${product.id}-${Date.now()}`,
                     productId: product.id,
                     name: product.name,
-                    price: price,
+                    price: finalPrice,
                     image_url: product.image_url,
                     quantity: quantity,
-                    maxQuantity: 100, // Default max quantity
+                    maxQuantity: variant?.stock_quantity || product.stock_quantity || 100,
+                    variantId: variant?.id,
+                    variantName: variant?.name,
                 },
             ]
         })
         setIsCartOpen(true)
     }, [])
 
-    const removeFromCart = useCallback((productId: string) => {
-        setItems((prevItems) => prevItems.filter((item) => item.productId !== productId))
+    const removeFromCart = useCallback((itemId: string) => {
+        setItems((prevItems) => prevItems.filter((item) => item.id !== itemId))
         toast.info("Item removed from cart")
     }, [])
 
-    const updateQuantity = useCallback((productId: string, quantity: number) => {
+    const updateQuantity = useCallback((itemId: string, quantity: number) => {
         if (quantity < 1) {
-            removeFromCart(productId)
+            removeFromCart(itemId)
             return
         }
 
         setItems((prevItems) =>
             prevItems.map((item) =>
-                item.productId === productId ? { ...item, quantity } : item
+                item.id === itemId ? { ...item, quantity } : item
             )
         )
     }, [removeFromCart])

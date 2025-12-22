@@ -33,12 +33,17 @@ export function CartItem({ item }: CartItemProps) {
                 <div className="flex justify-between items-start">
                     <div>
                         <h3 className="font-medium text-gray-900 line-clamp-1">{item.name}</h3>
+                        {item.variantName && (
+                            <p className="text-xs text-gray-500 mt-0.5">
+                                Variant: <span className="text-[#1F8D9D] font-medium">{item.variantName}</span>
+                            </p>
+                        )}
                         <p className="text-[#1F8D9D] font-bold mt-1">
                             PKR {item.price.toFixed(0)}
                         </p>
                     </div>
                     <button
-                        onClick={() => removeFromCart(item.productId)}
+                        onClick={() => removeFromCart(item.id)}
                         className="text-gray-400 hover:text-red-500 transition-colors p-1"
                         aria-label="Remove item"
                     >
@@ -49,7 +54,7 @@ export function CartItem({ item }: CartItemProps) {
                 <div className="flex items-center justify-between mt-2">
                     <div className="flex items-center border rounded-lg bg-gray-50">
                         <button
-                            onClick={() => updateQuantity(item.productId, item.quantity - 1)}
+                            onClick={() => updateQuantity(item.id, item.quantity - 1)}
                             className="p-1.5 hover:bg-gray-200 rounded-l-lg transition-colors"
                             disabled={item.quantity <= 1}
                         >
@@ -57,7 +62,7 @@ export function CartItem({ item }: CartItemProps) {
                         </button>
                         <span className="w-8 text-center text-sm font-medium">{item.quantity}</span>
                         <button
-                            onClick={() => updateQuantity(item.productId, item.quantity + 1)}
+                            onClick={() => updateQuantity(item.id, item.quantity + 1)}
                             className="p-1.5 hover:bg-gray-200 rounded-r-lg transition-colors"
                             disabled={item.quantity >= (item.maxQuantity || 100)}
                         >

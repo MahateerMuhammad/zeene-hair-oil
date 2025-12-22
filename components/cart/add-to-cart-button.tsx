@@ -8,12 +8,21 @@ import { cn } from "@/lib/utils"
 
 interface AddToCartButtonProps {
     product: any
+    quantity?: number
+    selectedVariant?: any
     className?: string
     variant?: "default" | "outline" | "secondary" | "ghost" | "link" | "destructive"
     size?: "default" | "sm" | "lg" | "icon"
 }
 
-export function AddToCartButton({ product, className, variant = "default", size = "default" }: AddToCartButtonProps) {
+export function AddToCartButton({
+    product,
+    quantity = 1,
+    selectedVariant,
+    className,
+    variant = "default",
+    size = "default"
+}: AddToCartButtonProps) {
     const { addToCart } = useCart()
     const [isAdded, setIsAdded] = useState(false)
 
@@ -21,7 +30,7 @@ export function AddToCartButton({ product, className, variant = "default", size 
         e.preventDefault()
         e.stopPropagation()
 
-        addToCart(product)
+        addToCart(product, quantity, selectedVariant)
         setIsAdded(true)
 
         setTimeout(() => {
