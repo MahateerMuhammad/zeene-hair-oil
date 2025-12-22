@@ -16,6 +16,7 @@ interface Product {
   is_on_sale: boolean | null
   sale_price: number | null
   sale_percentage: number | null
+  stock_quantity: number | null
 }
 
 export default function FeaturedProducts() {
@@ -137,6 +138,21 @@ export default function FeaturedProducts() {
                 
                 {/* Gradient Overlay */}
                 <div className="absolute inset-0 bg-gradient-to-t from-black/10 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                
+                {/* Stock Status Overlay */}
+                {product.stock_quantity !== null && product.stock_quantity <= 0 && (
+                  <div className="absolute inset-0 bg-black/60 flex items-center justify-center">
+                    <div className="bg-red-500 text-white px-6 py-3 rounded-xl text-lg font-bold shadow-lg">
+                      Out of Stock
+                    </div>
+                  </div>
+                )}
+                
+                {product.stock_quantity !== null && product.stock_quantity > 0 && product.stock_quantity <= 5 && (
+                  <div className="absolute bottom-4 left-4 bg-yellow-500 text-white px-4 py-2 rounded-xl text-sm font-bold shadow-lg">
+                    Only {product.stock_quantity} left!
+                  </div>
+                )}
               </div>
 
               {/* Enhanced Content */}
@@ -176,13 +192,23 @@ export default function FeaturedProducts() {
                   whileTap={{ scale: 0.98 }}
                   className="w-full"
                 >
-                  <Link
-                    href={`/products/${product.id}`}
-                    className="group/btn flex items-center justify-center space-x-3 w-full px-6 py-4 bg-gradient-to-r from-[#1F8D9D] to-[#16A085] text-white rounded-2xl hover:from-[#186F7B] hover:to-[#138D75] transition-all duration-300 shadow-lg hover:shadow-xl font-semibold text-lg"
-                  >
-                    <ShoppingCart className="w-5 h-5 group-hover/btn:rotate-12 transition-transform duration-300" />
-                    <span>View Details</span>
-                  </Link>
+                  {product.stock_quantity !== null && product.stock_quantity <= 0 ? (
+                    <button
+                      disabled
+                      className="flex items-center justify-center space-x-3 w-full px-6 py-4 bg-gray-300 text-gray-500 rounded-2xl cursor-not-allowed font-semibold text-lg"
+                    >
+                      <ShoppingCart className="w-5 h-5" />
+                      <span>Out of Stock</span>
+                    </button>
+                  ) : (
+                    <Link
+                      href={`/products/${product.id}`}
+                      className="group/btn flex items-center justify-center space-x-3 w-full px-6 py-4 bg-gradient-to-r from-[#1F8D9D] to-[#16A085] text-white rounded-2xl hover:from-[#186F7B] hover:to-[#138D75] transition-all duration-300 shadow-lg hover:shadow-xl font-semibold text-lg"
+                    >
+                      <ShoppingCart className="w-5 h-5 group-hover/btn:rotate-12 transition-transform duration-300" />
+                      <span>View Details</span>
+                    </Link>
+                  )}
                 </motion.div>
               </div>
 

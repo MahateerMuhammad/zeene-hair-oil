@@ -116,7 +116,34 @@ export default function CheckoutPage() {
             // We will loop through items and create an order for each
             // Ideally, we should wrap this in a transaction or have a better schema, but sticking to existing schema for now.
 
-            const orderPromises = items.map(item => {
+            const orderPromises = items.map(async (item) => {
+                // First, check current stock and reduce it
+                const { data: product, error: fetchError } = await supabase
+                    .from("products")
+                    .select("stock_quantity")
+                    .eq("id", item.id)
+                    .single()
+
+                if (fetchError) {
+                    throw new Error(`Failed to check stock for ${item.name}`)
+                }
+
+                // Only reduce stock if stock_quantity is not null (null means unlimited)
+                if (product.stock_quantity !== null) {
+                    const newStock = product.stock_quantity - item.quantity
+                    
+                    // Update stock quantity
+                    const { error: updateError } = await supabase
+                        .from("products")
+                        .update({ stock_quantity: Math.max(0, newStock) })
+                        .eq("id", item.id)
+
+                    if (updateError) {
+                        throw new Error(`Failed to update stock for ${item.name}`)
+                    }
+                }
+
+                // Create the order
                 return supabase.from("orders").insert({
                     user_id: user ? user.id : null,
                     product_id: item.id,

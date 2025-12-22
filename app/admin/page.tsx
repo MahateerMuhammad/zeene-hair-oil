@@ -26,6 +26,14 @@ interface Product {
   is_on_sale: boolean | null
   sale_price: number | null
   sale_percentage: number | null
+  category_id: string | null
+  stock_quantity: number | null
+}
+
+interface Category {
+  id: string
+  name: string
+  slug: string
 }
 
 interface Order {
@@ -43,9 +51,10 @@ interface Order {
 }
 
 export default function AdminDashboard() {
-  const [activeTab, setActiveTab] = useState<"orders" | "products">("orders")
+  const [activeTab, setActiveTab] = useState<"orders" | "products" | "categories">("orders")
   const [orders, setOrders] = useState<Order[]>([])
   const [products, setProducts] = useState<Product[]>([])
+  const [categories, setCategories] = useState<Category[]>([])
   const [loading, setLoading] = useState(true)
   const [showProductModal, setShowProductModal] = useState(false)
   const [showDeleteModal, setShowDeleteModal] = useState(false)
@@ -59,12 +68,20 @@ export default function AdminDashboard() {
     is_on_sale: false,
     sale_price: "",
     sale_percentage: "",
+    category_id: "",
+    stock_quantity: "",
   })
   const [imageFiles, setImageFiles] = useState<File[]>([])
   const [uploadingImages, setUploadingImages] = useState(false)
   const [validationErrors, setValidationErrors] = useState<Array<{field: string, message: string}>>([])
   const [submitError, setSubmitError] = useState<string>("")
   const [deleting, setDeleting] = useState(false)
+  const [showCategoryModal, setShowCategoryModal] = useState(false)
+  const [editingCategory, setEditingCategory] = useState<Category | null>(null)
+  const [categoryForm, setCategoryForm] = useState({
+    name: "",
+    slug: "",
+  })
 
   const { user, userRole } = useAuth()
   const router = useRouter()
@@ -88,7 +105,7 @@ export default function AdminDashboard() {
       }
 
       // Only fetch data if user is admin
-      await Promise.all([fetchOrders(), fetchProducts()])
+      await Promise.all([fetchOrders(), fetchProducts(), fetchCategories()])
     }
 
     checkAuth()
@@ -126,6 +143,20 @@ export default function AdminDashboard() {
       setSubmitError('Failed to fetch products. Please try again.')
     } finally {
       setLoading(false)
+    }
+  }
+
+  const fetchCategories = async () => {
+    try {
+      const { data, error } = await supabase
+        .from("categories")
+        .select("*")
+        .order("name", { ascending: true })
+
+      if (error) throw error
+      setCategories(data || [])
+    } catch (error) {
+      console.error('Failed to fetch categories:', error)
     }
   }
 
@@ -293,6 +324,8 @@ export default function AdminDashboard() {
         is_on_sale: productForm.is_on_sale,
         sale_price: productForm.is_on_sale && productForm.sale_price ? parseFloat(productForm.sale_price) : null,
         sale_percentage: productForm.is_on_sale && productForm.sale_percentage ? parseInt(productForm.sale_percentage) : null,
+        category_id: productForm.category_id || null,
+        stock_quantity: productForm.stock_quantity ? parseInt(productForm.stock_quantity) : null,
       }
 
       console.log('Product data to save:', productData)
@@ -388,6 +421,82 @@ export default function AdminDashboard() {
     }
   }
 
+  // Category Management Functions
+  const openCategoryModal = (category?: Category) => {
+    if (category) {
+      setEditingCategory(category)
+      setCategoryForm({
+        name: category.name,
+        slug: category.slug,
+      })
+    } else {
+      setEditingCategory(null)
+      setCategoryForm({ name: "", slug: "" })
+    }
+    setSubmitError("")
+    setShowCategoryModal(true)
+  }
+
+  const handleCategorySubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setSubmitError("")
+
+    try {
+      const categoryData = {
+        name: categoryForm.name.trim(),
+        slug: categoryForm.slug.trim() || categoryForm.name.toLowerCase().replace(/\s+/g, '-'),
+      }
+
+      if (editingCategory) {
+        const { error } = await supabase
+          .from("categories")
+          .update(categoryData)
+          .eq("id", editingCategory.id)
+        
+        if (error) throw error
+        setSubmitError("Category updated successfully!")
+      } else {
+        const { error } = await supabase
+          .from("categories")
+          .insert(categoryData)
+        
+        if (error) throw error
+        setSubmitError("Category added successfully!")
+      }
+
+      setTimeout(() => {
+        setSubmitError("")
+        setShowCategoryModal(false)
+        fetchCategories()
+      }, 1500)
+    } catch (error: any) {
+      console.error("Category error:", error)
+      setSubmitError(`Failed to save category: ${error.message}`)
+    }
+  }
+
+  const handleDeleteCategory = async (categoryId: string) => {
+    if (!confirm("Are you sure you want to delete this category? Products in this category will not be deleted.")) {
+      return
+    }
+
+    try {
+      const { error } = await supabase
+        .from("categories")
+        .delete()
+        .eq("id", categoryId)
+
+      if (error) throw error
+      
+      setSubmitError("Category deleted successfully!")
+      setTimeout(() => setSubmitError(""), 2000)
+      fetchCategories()
+    } catch (error: any) {
+      console.error("Delete category error:", error)
+      setSubmitError(`Failed to delete category: ${error.message}`)
+    }
+  }
+
 
 
   const openProductModal = (product?: Product) => {
@@ -401,10 +510,12 @@ export default function AdminDashboard() {
         is_on_sale: product.is_on_sale || false,
         sale_price: product.sale_price ? product.sale_price.toString() : "",
         sale_percentage: product.sale_percentage ? product.sale_percentage.toString() : "",
+        category_id: product.category_id || "",
+        stock_quantity: product.stock_quantity ? product.stock_quantity.toString() : "",
       })
     } else {
       setEditingProduct(null)
-      setProductForm({ name: "", price: "", description: "", image_url: "", is_on_sale: false, sale_price: "", sale_percentage: "" })
+      setProductForm({ name: "", price: "", description: "", image_url: "", is_on_sale: false, sale_price: "", sale_percentage: "", category_id: "", stock_quantity: "" })
     }
     setImageFiles([])
     setValidationErrors([])
@@ -515,6 +626,19 @@ export default function AdminDashboard() {
                   <span>Products</span>
                 </span>
               </button>
+              <button
+                onClick={() => setActiveTab("categories")}
+                className={`py-3 sm:py-4 px-2 sm:px-1 border-b-2 font-medium text-sm sm:text-base whitespace-nowrap transition-colors ${
+                  activeTab === "categories"
+                    ? "border-[#1F8D9D] text-[#1F8D9D]"
+                    : "border-transparent text-gray-500 hover:text-gray-700"
+                }`}
+              >
+                <span className="flex items-center space-x-2">
+                  <Package className="w-4 h-4 sm:hidden" />
+                  <span>Categories</span>
+                </span>
+              </button>
             </nav>
           </div>
 
@@ -593,7 +717,7 @@ export default function AdminDashboard() {
                   </div>
                 )}
               </div>
-            ) : (
+            ) : activeTab === "products" ? (
               <div>
                 <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-4 sm:mb-6 space-y-3 sm:space-y-0">
                   <h2 className="text-xl sm:text-2xl font-semibold text-[#1B1B1B]">Products Management</h2>
@@ -676,10 +800,129 @@ export default function AdminDashboard() {
                   </div>
                 )}
               </div>
+            ) : (
+              <div>
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-4 sm:mb-6 space-y-3 sm:space-y-0">
+                  <h2 className="text-xl sm:text-2xl font-semibold text-[#1B1B1B]">Categories Management</h2>
+                  <button 
+                    onClick={() => openCategoryModal()} 
+                    className="btn-primary flex items-center justify-center space-x-2 w-full sm:w-auto px-4 py-2 text-sm sm:text-base"
+                  >
+                    <Plus className="w-4 h-4" />
+                    <span>Add Category</span>
+                  </button>
+                </div>
+
+                {categories.length === 0 ? (
+                  <div className="text-center py-8 sm:py-12">
+                    <Package className="w-8 h-8 sm:w-12 sm:h-12 text-gray-400 mx-auto mb-4" />
+                    <p className="text-sm sm:text-base text-gray-600 mb-4">No categories yet</p>
+                    <p className="text-xs sm:text-sm text-gray-500">Add categories like Clothing, Food, Wellness, etc.</p>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {categories.map((category) => (
+                      <div key={category.id} className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow bg-white">
+                        <div className="mb-3">
+                          <h3 className="font-semibold text-[#1B1B1B] text-lg">{category.name}</h3>
+                          <p className="text-sm text-gray-500">{category.slug}</p>
+                        </div>
+                        <div className="flex space-x-2">
+                          <button
+                            onClick={() => openCategoryModal(category)}
+                            className="flex items-center justify-center space-x-1 bg-[#1F8D9D] hover:bg-[#1F8D9D]/90 text-white px-3 py-2 rounded text-sm transition-colors flex-1"
+                          >
+                            <Edit className="w-4 h-4" />
+                            <span>Edit</span>
+                          </button>
+                          <button
+                            onClick={() => handleDeleteCategory(category.id)}
+                            className="flex items-center justify-center space-x-1 bg-red-500 hover:bg-red-600 text-white px-3 py-2 rounded text-sm transition-colors flex-1"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                            <span>Delete</span>
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
             )}
           </div>
         </div>
       </div>
+
+      {/* Category Modal */}
+      {showCategoryModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-2xl max-w-md w-full p-6">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-2xl font-semibold text-[#1B1B1B]">
+                {editingCategory ? "Edit Category" : "Add Category"}
+              </h3>
+              <button
+                onClick={() => setShowCategoryModal(false)}
+                className="text-gray-400 hover:text-gray-600"
+              >
+                <X className="w-6 h-6" />
+              </button>
+            </div>
+
+            <form onSubmit={handleCategorySubmit} className="space-y-4">
+              {submitError && (
+                <div className={`border rounded-lg p-3 ${
+                  submitError.includes('successfully') 
+                    ? 'bg-green-50 border-green-200 text-green-700' 
+                    : 'bg-red-50 border-red-200 text-red-700'
+                }`}>
+                  {submitError}
+                </div>
+              )}
+
+              <div>
+                <label className="block text-sm font-medium text-[#1B1B1B] mb-2">Category Name *</label>
+                <input
+                  type="text"
+                  required
+                  value={categoryForm.name}
+                  onChange={(e) => setCategoryForm({ ...categoryForm, name: e.target.value })}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#1F8D9D] focus:border-transparent"
+                  placeholder="e.g., Clothing, Food, Wellness"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-[#1B1B1B] mb-2">Slug (Optional)</label>
+                <input
+                  type="text"
+                  value={categoryForm.slug}
+                  onChange={(e) => setCategoryForm({ ...categoryForm, slug: e.target.value })}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#1F8D9D] focus:border-transparent"
+                  placeholder="Auto-generated from name"
+                />
+                <p className="text-xs text-gray-500 mt-1">Leave empty to auto-generate from name</p>
+              </div>
+
+              <div className="flex space-x-3 pt-4">
+                <button
+                  type="button"
+                  onClick={() => setShowCategoryModal(false)}
+                  className="flex-1 px-6 py-3 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="flex-1 px-6 py-3 bg-[#1F8D9D] text-white rounded-lg hover:bg-[#186F7B] transition-colors"
+                >
+                  {editingCategory ? "Update" : "Create"}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
 
       {/* Product Modal */}
       {showProductModal && (
@@ -770,6 +1013,37 @@ export default function AdminDashboard() {
                   className="w-full px-3 sm:px-4 py-2 sm:py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#1F8D9D] focus:border-transparent text-sm sm:text-base"
                   placeholder="Enter price in PKR"
                 />
+              </div>
+
+              <div>
+                <label className="block text-xs sm:text-sm font-medium text-[#1B1B1B] mb-1 sm:mb-2">Category</label>
+                <select
+                  value={productForm.category_id}
+                  onChange={(e) => setProductForm({ ...productForm, category_id: e.target.value })}
+                  className="w-full px-3 sm:px-4 py-2 sm:py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#1F8D9D] focus:border-transparent text-sm sm:text-base"
+                >
+                  <option value="">No Category</option>
+                  {categories.map((category) => (
+                    <option key={category.id} value={category.id}>
+                      {category.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-xs sm:text-sm font-medium text-[#1B1B1B] mb-1 sm:mb-2">Stock Quantity</label>
+                <input
+                  type="number"
+                  min="0"
+                  value={productForm.stock_quantity}
+                  onChange={(e) => setProductForm({ ...productForm, stock_quantity: e.target.value })}
+                  className="w-full px-3 sm:px-4 py-2 sm:py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#1F8D9D] focus:border-transparent text-sm sm:text-base"
+                  placeholder="Enter stock quantity (leave empty for unlimited)"
+                />
+                <p className="text-xs text-gray-500 mt-1">
+                  Leave empty for unlimited stock. Set to 0 to mark as out of stock.
+                </p>
               </div>
 
               <div>

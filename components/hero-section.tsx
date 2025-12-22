@@ -64,9 +64,9 @@ export default function HeroSection() {
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.8, delay: 0.2 }}
             >
-              <span className="text-gradient">Healthy Hair</span>
+              <span className="text-gradient">Shop Smart</span>
               <br />
-              <span className="text-[#1B1B1B]">Starts Here</span>
+              <span className="text-[#1B1B1B]">Live Better</span>
             </motion.h1>
 
             <motion.p 
@@ -75,8 +75,7 @@ export default function HeroSection() {
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.8, delay: 0.4 }}
             >
-              Experience the power of nature with ZEENE&apos;s premium hair oil collection. Nourish, strengthen, and
-              transform your hair naturally.
+              Discover amazing products at unbeatable prices. Shop from our curated collection and enjoy a seamless shopping experience.
             </motion.p>
 
             <motion.div 
@@ -104,7 +103,7 @@ export default function HeroSection() {
                   href="/products"
                   className="inline-block text-base sm:text-lg px-6 sm:px-8 py-3 sm:py-4 bg-gray-200 text-[#1F8D9D] rounded-lg font-semibold transition-all duration-300 hover:bg-gray-300 text-center"
                 >
-                  Learn More
+                  Browse Categories
                 </Link>
               </motion.div>
             </motion.div>
@@ -133,7 +132,7 @@ export default function HeroSection() {
               >
                 <Image
                   src="/oil.png"
-                  alt="ZEENE Hair Oil Bottle"
+                  alt="Featured Product"
                   width={400}
                   height={500}
                   className="w-64 h-80 sm:w-72 sm:h-88 lg:w-80 lg:h-96 object-cover rounded-2xl"

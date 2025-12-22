@@ -5,13 +5,17 @@ import { useState, useEffect } from "react"
 import { useParams, useRouter } from "next/navigation"
 import Navigation from "@/components/navigation"
 import { supabase } from "@/lib/supabase"
-import { ShoppingCart, ArrowLeft, Leaf, Shield, Zap, Plus, Minus, Heart } from "lucide-react"
+import { ShoppingCart, ArrowLeft, Leaf, Shield, Zap, Plus, Minus, Heart, Star, Package } from "lucide-react"
 import ProductImage from "@/components/ui/product-image"
 import ErrorBoundary from "@/components/ui/error-boundary"
 import Loading from "@/components/ui/loading"
 import { motion, AnimatePresence } from "framer-motion"
 import { useIsMobile } from "@/hooks/use-mobile"
 import { AddToCartButton } from "@/components/cart/add-to-cart-button"
+import { ProductReviews } from "@/components/product-reviews"
+import { WishlistButton } from "@/components/wishlist-button"
+import { Badge } from "@/components/ui/badge"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 
 interface Product {
   id: string
@@ -22,6 +26,10 @@ interface Product {
   is_on_sale: boolean | null
   sale_price: number | null
   sale_percentage: number | null
+  rating: number | null
+  review_count: number | null
+  stock_quantity: number | null
+  sku: string | null
 }
 
 export default function ProductDetailPage() {
@@ -30,7 +38,7 @@ export default function ProductDetailPage() {
   const [product, setProduct] = useState<Product | null>(null)
   const [loading, setLoading] = useState(true)
   const [imageZoomed, setImageZoomed] = useState(false)
-  const [activeTab, setActiveTab] = useState<'description'>('description')
+  const [activeTab, setActiveTab] = useState<'description' | 'reviews'>('description')
   const [quantity, setQuantity] = useState(1)
 
   const isMobile = useIsMobile()
@@ -226,6 +234,45 @@ export default function ProductDetailPage() {
                   {product.name}
                 </motion.h1>
 
+                {/* Rating & Stock Status */}
+                <div className="flex items-center gap-4 flex-wrap">
+                  {product.rating && product.rating > 0 && (
+                    <div className="flex items-center gap-2">
+                      <div className="flex">
+                        {[1, 2, 3, 4, 5].map((star) => (
+                          <Star
+                            key={star}
+                            className={`h-5 w-5 ${
+                              star <= Math.round(product.rating!)
+                                ? "fill-yellow-400 text-yellow-400"
+                                : "text-gray-300"
+                            }`}
+                          />
+                        ))}
+                      </div>
+                      <span className="text-sm text-gray-600">
+                        {product.rating.toFixed(1)} ({product.review_count || 0} reviews)
+                      </span>
+                    </div>
+                  )}
+                  
+                  {/* Stock Status */}
+                  {product.stock_quantity !== null && (
+                    <div>
+                      {product.stock_quantity > 0 ? (
+                        <Badge variant="default" className="bg-green-500">
+                          <Package className="h-3 w-3 mr-1" />
+                          In Stock ({product.stock_quantity} available)
+                        </Badge>
+                      ) : (
+                        <Badge variant="destructive">
+                          Out of Stock
+                        </Badge>
+                      )}
+                    </div>
+                  )}
+                </div>
+
                 <motion.div
                   className="flex flex-col sm:flex-row sm:flex-wrap sm:items-center gap-3 sm:gap-4"
                   initial={{ opacity: 0, y: 20 }}
@@ -404,11 +451,24 @@ export default function ProductDetailPage() {
                   </motion.div>
 
                   {/* Add To Cart Button */}
-                  <AddToCartButton
-                    product={product}
-                    quantity={quantity}
-                    className="w-full py-4 sm:py-5 text-lg"
-                  />
+                  <div className="flex gap-3">
+                    {product.stock_quantity !== null && product.stock_quantity <= 0 ? (
+                      <button
+                        disabled
+                        className="flex-1 py-4 sm:py-5 text-lg bg-gray-300 text-gray-500 rounded-xl cursor-not-allowed font-semibold flex items-center justify-center gap-2"
+                      >
+                        <ShoppingCart className="w-5 h-5" />
+                        Out of Stock
+                      </button>
+                    ) : (
+                      <AddToCartButton
+                        product={product}
+                        quantity={quantity}
+                        className="flex-1 py-4 sm:py-5 text-lg"
+                      />
+                    )}
+                    <WishlistButton productId={product.id} productName={product.name} />
+                  </div>
 
                   <div className="text-center text-xs sm:text-sm text-gray-600 space-y-1 mt-4">
                     <p>✓ Cash on delivery available</p>
@@ -445,6 +505,44 @@ export default function ProductDetailPage() {
                 We combine traditional wisdom with modern science to create the perfect hair care solution.
               </motion.p>
             </div>
+          </motion.section>
+
+          {/* Product Details & Reviews Tabs */}
+          <motion.section
+            className="mb-12 max-w-5xl mx-auto"
+            initial={{ opacity: 0, y: 50 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, delay: 0.6 }}
+          >
+            <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as 'description' | 'reviews')} className="w-full">
+              <TabsList className="grid w-full grid-cols-2">
+                <TabsTrigger value="description">Description</TabsTrigger>
+                <TabsTrigger value="reviews">
+                  Reviews {product.review_count ? `(${product.review_count})` : ''}
+                </TabsTrigger>
+              </TabsList>
+              <TabsContent value="description" className="mt-6">
+                <div className="bg-white rounded-2xl p-8 shadow-lg">
+                  <h3 className="text-2xl font-bold mb-4">Product Description</h3>
+                  <p className="text-gray-700 leading-relaxed whitespace-pre-line">
+                    {product.description || 'No description available.'}
+                  </p>
+                  
+                  {product.sku && (
+                    <div className="mt-6 pt-6 border-t">
+                      <p className="text-sm text-gray-600">
+                        <strong>SKU:</strong> {product.sku}
+                      </p>
+                    </div>
+                  )}
+                </div>
+              </TabsContent>
+              <TabsContent value="reviews" className="mt-6">
+                <div className="bg-white rounded-2xl p-8 shadow-lg">
+                  <ProductReviews productId={product.id} productName={product.name} />
+                </div>
+              </TabsContent>
+            </Tabs>
           </motion.section>
         </div>
       </div>

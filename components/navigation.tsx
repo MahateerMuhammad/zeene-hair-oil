@@ -66,6 +66,7 @@ function Navigation() {
   const authItems = useMemo((): AuthItem[] => {
     if (user) {
       return [
+        { href: "/profile", label: "Profile" } as AuthItem,
         ...(userRole === "admin" ? [{ href: "/admin", label: "Admin" } as AuthItem] : []),
         { action: handleSignOut, label: "Sign Out", icon: LogOut } as AuthItem
       ]

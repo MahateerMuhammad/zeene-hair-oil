@@ -4,11 +4,13 @@ import { useState, useEffect } from "react"
 import Link from "next/link"
 import Navigation from "@/components/navigation"
 import { supabase } from "@/lib/supabase"
-import { Search, Filter, Heart, Eye } from "lucide-react"
+import { Search, Filter, Heart, Eye, Star } from "lucide-react"
 import { motion, AnimatePresence } from "framer-motion"
 import ProductImage from "@/components/ui/product-image"
-import ErrorBoundary from "@/components/ui/error-boundary"
 import { AddToCartButton } from "@/components/cart/add-to-cart-button"
+import { CategoriesFilter } from "@/components/categories-filter"
+import { WishlistButton } from "@/components/wishlist-button"
+import { Badge } from "@/components/ui/badge"
 
 interface Product {
   id: string
@@ -19,6 +21,11 @@ interface Product {
   is_on_sale: boolean | null
   sale_price: number | null
   sale_percentage: number | null
+  rating: number | null
+  review_count: number | null
+  stock_quantity: number | null
+  is_featured: boolean | null
+  category_id: string | null
 }
 
 export default function ProductsPage() {
@@ -28,6 +35,9 @@ export default function ProductsPage() {
   const [searchQuery, setSearchQuery] = useState("")
   const [sortBy, setSortBy] = useState("newest")
   const [favorites, setFavorites] = useState<Set<string>>(new Set())
+  const [selectedCategory, setSelectedCategory] = useState<string | null>(null)
+  const [minPrice, setMinPrice] = useState<number>(0)
+  const [maxPrice, setMaxPrice] = useState<number>(10000)
 
   useEffect(() => {
     fetchProducts()
@@ -35,13 +45,23 @@ export default function ProductsPage() {
 
   useEffect(() => {
     filterAndSortProducts()
-  }, [products, searchQuery, sortBy])
+  }, [products, searchQuery, sortBy, selectedCategory, minPrice, maxPrice])
 
   const filterAndSortProducts = () => {
-    let filtered = products.filter(product =>
-      product.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      (product.description && product.description.toLowerCase().includes(searchQuery.toLowerCase()))
-    )
+    let filtered = products.filter(product => {
+      // Search filter
+      const matchesSearch = product.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        (product.description && product.description.toLowerCase().includes(searchQuery.toLowerCase()))
+      
+      // Category filter
+      const matchesCategory = !selectedCategory || product.category_id === selectedCategory
+      
+      // Price filter
+      const productPrice = product.is_on_sale && product.sale_price ? product.sale_price : product.price
+      const matchesPrice = productPrice >= minPrice && productPrice <= maxPrice
+      
+      return matchesSearch && matchesCategory && matchesPrice
+    })
 
     switch (sortBy) {
       case "price-low":
@@ -57,6 +77,9 @@ export default function ProductsPage() {
           const priceB = b.is_on_sale && b.sale_price ? b.sale_price : b.price
           return priceB - priceA
         })
+        break
+      case "rating":
+        filtered.sort((a, b) => (b.rating || 0) - (a.rating || 0))
         break
       case "sale":
         filtered.sort((a, b) => {
@@ -132,8 +155,7 @@ export default function ProductsPage() {
   }
 
   return (
-    <ErrorBoundary>
-      <div className="min-h-screen bg-gradient-to-br from-[#F9F9F9] via-white to-[#F0F8FF]">
+    <div className="min-h-screen bg-gradient-to-br from-[#F9F9F9] via-white to-[#F0F8FF]">
         <Navigation />
 
         <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 lg:py-12">
@@ -158,7 +180,7 @@ export default function ProductsPage() {
               transition={{ delay: 0.4, duration: 0.8 }}
               className="text-xl text-gray-600 max-w-3xl mx-auto mb-8"
             >
-              Discover our range of natural hair oils crafted for healthy, beautiful hair
+              Discover our range of natural products crafted for health and beauty
             </motion.p>
 
             {/* Search and Filter Bar */}
@@ -198,6 +220,7 @@ export default function ProductsPage() {
                       <option value="newest">Newest First</option>
                       <option value="price-low">Price: Low to High</option>
                       <option value="price-high">Price: High to Low</option>
+                      <option value="rating">Highest Rated</option>
                       <option value="sale">On Sale</option>
                     </select>
                     <Filter className="absolute right-2 sm:right-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-3 h-3 sm:w-4 sm:h-4 pointer-events-none" />
@@ -207,17 +230,32 @@ export default function ProductsPage() {
             </motion.div>
           </motion.div>
 
-          {/* Products Grid */}
-          <AnimatePresence mode="wait">
-            <motion.div
-              key={`${searchQuery}-${sortBy}`}
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              transition={{ duration: 0.5 }}
-              className="grid md:grid-cols-2 lg:grid-cols-3 gap-8"
-            >
-              {filteredProducts.map((product, index) => (
+          {/* Main Content with Sidebar */}
+          <div className="flex gap-8">
+            {/* Categories Sidebar */}
+            <CategoriesFilter
+              selectedCategory={selectedCategory}
+              onCategoryChange={setSelectedCategory}
+              minPrice={minPrice}
+              maxPrice={maxPrice}
+              onPriceChange={(min, max) => {
+                setMinPrice(min)
+                setMaxPrice(max)
+              }}
+            />
+
+            {/* Products Grid */}
+            <div className="flex-1">
+              <AnimatePresence mode="wait">
+                <motion.div
+                  key={`${searchQuery}-${sortBy}-${selectedCategory}`}
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  transition={{ duration: 0.5 }}
+                  className="grid md:grid-cols-2 lg:grid-cols-3 gap-6"
+                >
+                  {filteredProducts.map((product, index) => (
                 <motion.div
                   key={product.id}
                   initial={{ opacity: 0, y: 30 }}
@@ -239,19 +277,9 @@ export default function ProductsPage() {
                   )}
 
                   {/* Favorite Button */}
-                  <motion.button
-                    whileHover={{ scale: 1.1 }}
-                    whileTap={{ scale: 0.9 }}
-                    onClick={() => toggleFavorite(product.id)}
-                    className="absolute top-4 right-4 z-20 p-2 bg-white/80 backdrop-blur-sm rounded-full shadow-lg hover:bg-white transition-all duration-300"
-                  >
-                    <Heart
-                      className={`w-5 h-5 transition-colors duration-300 ${favorites.has(product.id)
-                        ? 'text-red-500 fill-red-500'
-                        : 'text-gray-400 hover:text-red-400'
-                        }`}
-                    />
-                  </motion.button>
+                  <div className="absolute top-4 right-4 z-20">
+                    <WishlistButton productId={product.id} productName={product.name} />
+                  </div>
 
                   {/* Product Image */}
                   <div className="aspect-square overflow-hidden relative">
@@ -263,6 +291,21 @@ export default function ProductsPage() {
                       height={400}
                     />
                     <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+                    
+                    {/* Stock Status */}
+                    {product.stock_quantity !== null && product.stock_quantity <= 0 && (
+                      <div className="absolute inset-0 bg-black/60 flex items-center justify-center">
+                        <Badge variant="destructive" className="text-lg px-4 py-2">
+                          Out of Stock
+                        </Badge>
+                      </div>
+                    )}
+                    
+                    {product.stock_quantity !== null && product.stock_quantity > 0 && product.stock_quantity <= 5 && (
+                      <Badge variant="secondary" className="absolute bottom-4 left-4 bg-yellow-500 text-white">
+                        Only {product.stock_quantity} left!
+                      </Badge>
+                    )}
                   </div>
 
                   {/* Product Info */}
@@ -271,6 +314,27 @@ export default function ProductsPage() {
                       <h3 className="text-lg sm:text-xl font-bold text-[#1B1B1B] group-hover:text-[#1F8D9D] transition-colors duration-300">
                         {product.name}
                       </h3>
+                      
+                      {/* Rating */}
+                      {product.rating && product.rating > 0 && (
+                        <div className="flex items-center gap-2 mt-1">
+                          <div className="flex">
+                            {[1, 2, 3, 4, 5].map((star) => (
+                              <Star
+                                key={star}
+                                className={`h-3 w-3 ${
+                                  star <= Math.round(product.rating!)
+                                    ? "fill-yellow-400 text-yellow-400"
+                                    : "text-gray-300"
+                                }`}
+                              />
+                            ))}
+                          </div>
+                          <span className="text-xs text-gray-600">
+                            ({product.review_count || 0})
+                          </span>
+                        </div>
+                      )}
                     </div>
 
                     <p className="text-sm sm:text-base text-gray-600 mb-4 sm:mb-6 line-clamp-2">{product.description}</p>
@@ -302,10 +366,19 @@ export default function ProductsPage() {
                         <Eye className="w-3 h-3 sm:w-4 sm:h-4 group-hover/btn:scale-110 transition-transform duration-300" />
                         <span className="font-medium">View</span>
                       </Link>
-                      <AddToCartButton
-                        product={product}
-                        className="flex-1 rounded-xl shadow-lg hover:shadow-xl"
-                      />
+                      {product.stock_quantity !== null && product.stock_quantity <= 0 ? (
+                        <button
+                          disabled
+                          className="flex-1 rounded-xl shadow-lg bg-gray-300 text-gray-500 cursor-not-allowed px-3 sm:px-4 py-2.5 sm:py-3 text-sm sm:text-base"
+                        >
+                          Out of Stock
+                        </button>
+                      ) : (
+                        <AddToCartButton
+                          product={product}
+                          className="flex-1 rounded-xl shadow-lg hover:shadow-xl"
+                        />
+                      )}
                     </div>
                   </div>
                 </motion.div>
@@ -337,8 +410,9 @@ export default function ProductsPage() {
               )}
             </motion.div>
           )}
+            </div>
+          </div>
         </div>
       </div>
-    </ErrorBoundary>
   )
 }

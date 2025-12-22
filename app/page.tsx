@@ -11,23 +11,23 @@ export default function HomePage() {
   const features = [
     {
       icon: <Leaf className="w-8 h-8 text-[#3E7346]" />,
-      title: "100% Natural",
-      description: "Made with pure, natural ingredients for healthy hair growth",
+      title: "Quality Products",
+      description: "Carefully curated selection of premium products for your needs",
     },
     {
       icon: <Shield className="w-8 h-8 text-[#1F8D9D]" />,
-      title: "Chemical Free",
-      description: "No harmful chemicals, sulfates, or artificial additives",
+      title: "Secure Shopping",
+      description: "Safe and secure checkout with trusted payment methods",
     },
     {
       icon: <Heart className="w-8 h-8 text-[#FDBA2D]" />,
-      title: "Nourishing",
-      description: "Deep conditioning formula that strengthens from root to tip",
+      title: "Customer First",
+      description: "Dedicated support team ready to help you every step of the way",
     },
     {
       icon: <Star className="w-8 h-8 text-[#3E7346]" />,
-      title: "Premium Quality",
-      description: "Carefully crafted with the finest ingredients for best results",
+      title: "Best Value",
+      description: "Competitive prices with regular deals and discounts on top brands",
     },
   ]
 
@@ -50,10 +50,10 @@ export default function HomePage() {
             viewport={{ once: true }}
           >
             <h2 className="text-4xl md:text-5xl font-playfair font-bold text-[#1B1B1B] mb-4">
-              Why Choose <span className="text-gradient">ZEENE</span>?
+              Why Shop With <span className="text-gradient">Us</span>?
             </h2>
             <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-              Our commitment to natural beauty and hair health sets us apart
+              Your trusted destination for quality products and exceptional shopping experience
             </p>
           </motion.div>
 
@@ -96,7 +96,7 @@ export default function HomePage() {
             transition={{ duration: 0.6 }}
             viewport={{ once: true }}
           >
-            Ready to Transform Your Hair?
+            Discover Amazing Products Today
           </motion.h2>
           <motion.p 
             className="text-xl text-white/90 mb-8 max-w-2xl mx-auto"
@@ -105,7 +105,7 @@ export default function HomePage() {
             transition={{ duration: 0.6, delay: 0.2 }}
             viewport={{ once: true }}
           >
-            Join thousands of satisfied customers who have discovered the secret to healthy, beautiful hair
+            Join thousands of happy shoppers who trust us for quality products and excellent service
           </motion.p>
           <motion.div
             initial={{ opacity: 0, y: 30 }}
@@ -145,8 +145,8 @@ export default function HomePage() {
         <div className="container mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid md:grid-cols-4 gap-8">
             <div>
-              <h3 className="text-xl font-semibold mb-4">ZEENE Hair Oil</h3>
-              <p className="text-gray-400 mb-4">Premium natural hair care for healthy, beautiful hair.</p>
+              <h3 className="text-xl font-semibold mb-4">ZEENE Store</h3>
+              <p className="text-gray-400 mb-4">Your one-stop shop for quality products and great deals.</p>
 
               {/* Social Media Links */}
               <div className="flex space-x-4">
@@ -221,7 +221,7 @@ export default function HomePage() {
           </div>
 
           <div className="border-t border-gray-800 mt-8 pt-8 text-center text-gray-400">
-            <p>&copy; 2024 ZEENE Hair Oil. All rights reserved.</p>
+            <p>&copy; 2024 ZEENE Store. All rights reserved.</p>
           </div>
         </div>
       </footer>
