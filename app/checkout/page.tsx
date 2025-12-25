@@ -164,7 +164,7 @@ export default function CheckoutPage() {
             if (orderError) throw orderError
 
             const itemPromises = items.map(async (item) => {
-                return supabase.from("order_items").insert({
+                const { data, error } = await supabase.from("order_items").insert({
                     order_id: orderData.id,
                     product_id: item.productId,
                     variant_id: item.variantId || null,
@@ -173,8 +173,38 @@ export default function CheckoutPage() {
                     quantity: item.quantity,
                     subtotal: item.price * item.quantity
                 })
+                if (error) {
+                    console.error('Failed to insert order item:', error)
+                    throw error
+                }
+                return data
             })
             await Promise.all(itemPromises)
+            console.log('Order items inserted successfully for order:', orderData.id)
+
+            // Send order confirmation email
+            try {
+                const firstItem = items[0]
+                await fetch('/api/send-order-email', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        type: 'new_order',
+                        orderId: orderNumber,
+                        customerName: formData.customer_name,
+                        customerEmail: formData.email,
+                        customerPhone: formData.phone,
+                        customerAddress: formData.address,
+                        productName: firstItem.variantName ? `${firstItem.name} (${firstItem.variantName})` : firstItem.name,
+                        productPrice: firstItem.price,
+                        quantity: items.reduce((sum, item) => sum + item.quantity, 0),
+                        totalAmount: finalTotal
+                    })
+                })
+            } catch (emailError) {
+                console.error('Failed to send order email:', emailError)
+                // Don't fail the order if email fails
+            }
 
             setSuccess(true)
             clearCart()

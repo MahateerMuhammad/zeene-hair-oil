@@ -174,22 +174,47 @@ export default function AdminDashboard() {
 
   const fetchOrders = async () => {
     try {
-      const { data, error } = await supabase
+      // Fetch orders
+      const { data: ordersData, error: ordersError } = await supabase
         .from("orders")
-        .select(`
-          *,
-          order_items (
-            product_name,
-            product_price,
-            quantity,
-            variant_id
-          )
-        `)
+        .select("*")
         .order("created_at", { ascending: false })
 
-      if (error) throw error
-      setOrders(data || [])
+      if (ordersError) throw ordersError
+
+      console.log(`Fetched ${ordersData?.length || 0} orders`)
+
+      // Fetch order items for each order separately
+      const ordersWithItems = await Promise.all(
+        (ordersData || []).map(async (order) => {
+          const { data: itemsData, error: itemsError } = await supabase
+            .from("order_items")
+            .select("*")
+            .eq("order_id", order.id)
+
+          if (itemsError) {
+            console.error('Error fetching items for order:', order.id)
+            console.error('Full error:', JSON.stringify(itemsError, null, 2))
+            console.error('Error details:', {
+              message: itemsError.message,
+              code: itemsError.code,
+              details: itemsError.details,
+              hint: itemsError.hint
+            })
+          } else {
+            console.log(`Order ${order.order_number}: ${itemsData?.length || 0} items found`)
+          }
+
+          return {
+            ...order,
+            order_items: itemsData || []
+          }
+        })
+      )
+
+      setOrders(ordersWithItems)
     } catch (error) {
+      console.error('Failed to fetch orders:', error)
       logger.databaseError('Failed to fetch orders', 'SELECT', 'orders', error as Error)
       setSubmitError('Failed to fetch orders. Please try again.')
     }
@@ -230,7 +255,11 @@ export default function AdminDashboard() {
         .from("orders")
         .select(`
           *,
-          order_items (*)
+          order_items (
+            product_name,
+            product_price,
+            quantity
+          )
         `)
         .eq("id", orderId)
         .single()
@@ -243,32 +272,45 @@ export default function AdminDashboard() {
 
       // Send email notification to customer
       try {
-        // Use customer_email from order (works for both guest and authenticated users)
         const customerEmail = orderDetails.customer_email
         const totalAmount = orderDetails.total_amount || 0
+        const orderItems = orderDetails.order_items || []
+        const firstItem = orderItems[0] || { product_name: 'Product', product_price: 0, quantity: 1 }
+        const totalQuantity = orderItems.reduce((sum: number, item: any) => sum + item.quantity, 0)
 
         if (customerEmail) {
+          const emailType = status === 'approved' ? 'order_approved' : 'order_rejected'
+          
           await fetch('/api/send-order-email', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
-              type: 'order_status_update',
+              type: emailType,
+              orderId: orderDetails.order_number || orderId,
               customerName: orderDetails.customer_name,
               customerEmail: customerEmail,
-              status: status,
-              totalAmount: totalAmount,
-              orderNumber: orderDetails.order_number
+              customerPhone: orderDetails.phone || '',
+              customerAddress: orderDetails.address || '',
+              productName: firstItem.product_name,
+              productPrice: firstItem.product_price,
+              quantity: totalQuantity,
+              totalAmount: totalAmount
             })
           })
+          toast.success(`Order ${status} and email sent to customer`)
+        } else {
+          toast.success(`Order ${status}`)
         }
       } catch (emailError) {
         console.error("Failed to send status email:", emailError)
+        toast.warning(`Order ${status} but email failed to send`)
       }
 
       fetchOrders()
     } catch (error) {
       logger.databaseError('Failed to update order status', 'UPDATE', 'orders', error as Error)
       setSubmitError('Failed to update order status. Please try again.')
+      toast.error('Failed to update order status')
     }
   }
 

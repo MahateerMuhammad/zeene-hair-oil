@@ -5,6 +5,7 @@ import type React from "react"
 import { createContext, useContext, useEffect, useState } from "react"
 import type { User } from "@supabase/supabase-js"
 import { supabase } from "@/lib/supabase"
+import { handleAuthError } from "@/lib/auth-utils"
 
 interface AuthContextType {
   user: User | null
@@ -30,12 +31,24 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         fetchUserRole(session.user.id)
       }
       setLoading(false)
+    }).catch((error) => {
+      console.error('Session error:', error)
+      handleAuthError(error)
+      setLoading(false)
     })
 
     // Listen for auth changes
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange(async (event, session) => {
+      // Handle token refresh errors gracefully
+      if (event === 'TOKEN_REFRESHED') {
+        console.log('Token refreshed successfully')
+      } else if (event === 'SIGNED_OUT') {
+        setUser(null)
+        setUserRole(null)
+      }
+      
       setUser(session?.user ?? null)
       if (session?.user) {
         fetchUserRole(session.user.id)
@@ -55,11 +68,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (data) {
         setUserRole(data.role)
       } else if (error) {
+        console.log('User role not found, creating entry:', error.message)
         // User not found in users table, creating entry
-        // Try to create user entry if it doesn't exist
         await createUserEntry(userId)
       }
     } catch (error) {
+      console.error('Error fetching user role:', error)
       // Error fetching user role, defaulting to user
       setUserRole("user") // Default to user role
     }
