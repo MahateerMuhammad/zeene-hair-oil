@@ -11,6 +11,9 @@ import { CategoriesFilter } from "@/components/categories-filter"
 import { WishlistButton } from "@/components/wishlist-button"
 import { Badge } from "@/components/ui/badge"
 
+// Force dynamic rendering
+export const dynamic = 'force-dynamic'
+
 interface Product {
   id: string
   name: string

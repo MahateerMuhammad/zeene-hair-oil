@@ -10,6 +10,9 @@ import Link from "next/link"
 import { toast } from "sonner"
 import { ReceiptUpload } from "@/components/receipt-upload"
 
+// Force dynamic rendering
+export const dynamic = 'force-dynamic'
+
 interface CheckoutForm {
     customer_name: string
     email: string

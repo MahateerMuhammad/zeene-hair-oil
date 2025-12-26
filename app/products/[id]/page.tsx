@@ -13,6 +13,9 @@ import { AddToCartButton } from "@/components/cart/add-to-cart-button"
 import { ProductReviews } from "@/components/product-reviews"
 import { WishlistButton } from "@/components/wishlist-button"
 import { Badge } from "@/components/ui/badge"
+
+// Force dynamic rendering
+export const dynamic = 'force-dynamic'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 
 interface Product {

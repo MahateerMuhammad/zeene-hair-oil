@@ -10,6 +10,9 @@ import Link from "next/link"
 import { motion } from "framer-motion"
 import ProductImage from "@/components/ui/product-image"
 
+// Force dynamic rendering
+export const dynamic = 'force-dynamic'
+
 interface Order {
   id: string
   order_number: string

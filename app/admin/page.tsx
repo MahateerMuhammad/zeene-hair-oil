@@ -13,6 +13,9 @@ import { logger } from "@/lib/logger"
 import ProductImage from "@/components/ui/product-image"
 import ErrorBoundary from "@/components/ui/error-boundary"
 import Loading from "@/components/ui/loading"
+
+// Force dynamic rendering
+export const dynamic = 'force-dynamic'
 import { Package, Users, ShoppingCart, Plus, Edit, Trash2, Check, X, AlertCircle, ArrowRight, Eye } from "lucide-react"
 import { toast } from "sonner"
 import { motion, AnimatePresence } from "framer-motion"

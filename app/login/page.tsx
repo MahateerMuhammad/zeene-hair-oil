@@ -9,6 +9,9 @@ import { supabase } from "@/lib/supabase"
 import { Eye, EyeOff, ArrowRight } from "lucide-react"
 import { motion } from "framer-motion"
 
+// Force dynamic rendering to avoid build-time prerendering
+export const dynamic = 'force-dynamic'
+
 export default function LoginPage() {
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
