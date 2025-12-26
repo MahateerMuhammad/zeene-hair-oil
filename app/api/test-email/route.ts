@@ -2,10 +2,11 @@ import { NextResponse } from "next/server"
 import { Resend } from "resend"
 import { getValidatedServerEnv } from "../../../lib/env"
 
-const serverEnv = getValidatedServerEnv()
-const resend = new Resend(serverEnv.RESEND_API_KEY)
-
 export async function POST() {
+  // Validate env vars at request time
+  const serverEnv = getValidatedServerEnv()
+  const resend = new Resend(serverEnv.RESEND_API_KEY)
+  
   try {
     const { data, error } = await resend.emails.send({
       from: 'onboarding@resend.dev',

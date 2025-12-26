@@ -5,9 +5,6 @@ import { sanitizeInput, validateEmail, checkRateLimit } from "../../../lib/secur
 // Use the working API key directly
 import { getValidatedServerEnv } from "../../../lib/env"
 
-const serverEnv = getValidatedServerEnv()
-const resend = new Resend(serverEnv.RESEND_API_KEY)
-
 interface OrderEmailData {
   type: 'new_order' | 'order_approved' | 'order_rejected'
   orderId: string
@@ -23,6 +20,10 @@ interface OrderEmailData {
 
 export async function POST(request: NextRequest) {
   try {
+    // Validate env vars at request time
+    const serverEnv = getValidatedServerEnv()
+    const resend = new Resend(serverEnv.RESEND_API_KEY)
+    
     // Rate limiting
     const clientIP = request.headers.get('x-forwarded-for') || 'unknown'
     if (!checkRateLimit(clientIP, 10, 60000)) {

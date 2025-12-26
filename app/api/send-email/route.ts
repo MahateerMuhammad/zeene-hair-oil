@@ -2,9 +2,6 @@ import { type NextRequest, NextResponse } from "next/server"
 import { Resend } from "resend"
 import { getValidatedServerEnv } from "../../../lib/env"
 
-const serverEnv = getValidatedServerEnv()
-const resend = new Resend(serverEnv.RESEND_API_KEY)
-
 // Input validation and sanitization
 function sanitizeInput(input: string): string {
   return input.replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '')
@@ -20,6 +17,10 @@ function validateEmail(email: string): boolean {
 
 export async function POST(request: NextRequest) {
   try {
+    // Validate env vars at request time
+    const serverEnv = getValidatedServerEnv()
+    const resend = new Resend(serverEnv.RESEND_API_KEY)
+    
     const body = await request.json()
     
     // Validate required fields
