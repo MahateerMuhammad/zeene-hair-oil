@@ -10,10 +10,12 @@ const config = {
           normalizeWhitespace: true,
           minifySelectors: true,
           minifyParams: true,
+          cssDeclarationSorter: false,
         }],
       },
     }),
   },
+  parser: 'postcss-safe-parser',
 };
 
 export default config;

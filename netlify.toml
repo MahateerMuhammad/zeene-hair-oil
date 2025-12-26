@@ -1,11 +1,10 @@
 [build]
-  command = "npm run build 2>&1 | grep -v \"'var' is not recognized\" || true"
+  command = "npm run build"
   publish = ".next"
 
 [build.environment]
   NPM_FLAGS = "--legacy-peer-deps"
   NODE_VERSION = "20.19.6"
-  CI = "false"
 
 [[plugins]]
   package = "@netlify/plugin-nextjs"
