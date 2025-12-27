@@ -1,9 +1,9 @@
 [build]
   command = "npm run build"
   publish = ".next"
+  install = "npm ci --prefer-offline --no-audit --progress=false --legacy-peer-deps"
 
 [build.environment]
-  NPM_FLAGS = "--legacy-peer-deps"
   NODE_VERSION = "20.19.6"
 
 [[plugins]]
