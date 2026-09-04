@@ -86,7 +86,7 @@ function Navigation() {
 
   return (
     <motion.nav
-      className={`fixed top-0 inset-x-0 z-50 transition-all duration-500 will-change-transform ${scrolled
+      className={`fixed top-0 inset-x-0 z-50 transition-all duration-500 ${scrolled
         ? "bg-white/70 backdrop-blur-xl border-b border-white/20 py-4 shadow-[0_4px_30px_rgba(0,0,0,0.03)]"
         : "bg-transparent py-6"
         }`}
